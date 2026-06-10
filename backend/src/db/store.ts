@@ -1,7 +1,10 @@
 import fs from 'fs'
 import path from 'path'
 import { ENV } from '../config/env'
-import type { AppNotification, AppSettings, OlympiadApplication, ReportHistoryItem, User } from '../types'
+import type {
+  AcademicDebt, ActionLogEntry, AbsenceRecord, AppNotification, AppSettings, ExpulsionRequest,
+  InternalMessage, OlympiadApplication, ReportHistoryItem, SupportTicket, User,
+} from '../types'
 
 // Простое JSON-хранилище для изменяемого состояния прототипа
 // (пользователи, настройки, уведомления, история отчётов).
@@ -13,6 +16,12 @@ export interface StoreShape {
   settings: AppSettings
   notifications: AppNotification[]
   olympiadApplications: OlympiadApplication[]
+  messages: InternalMessage[]
+  supportTickets: SupportTicket[]
+  actionLog: ActionLogEntry[]
+  academicDebts: AcademicDebt[]
+  absenceRecords: AbsenceRecord[]
+  expulsionRequests: ExpulsionRequest[]
   reports: ReportHistoryItem[]
 }
 
@@ -47,6 +56,12 @@ const EMPTY: StoreShape = {
   settings: DEFAULT_SETTINGS,
   notifications: [],
   olympiadApplications: [],
+  messages: [],
+  supportTickets: [],
+  actionLog: [],
+  academicDebts: [],
+  absenceRecords: [],
+  expulsionRequests: [],
   reports: [],
 }
 
@@ -63,6 +78,12 @@ export function load(): StoreShape {
     try {
       cache = JSON.parse(fs.readFileSync(ENV.DB_FILE, 'utf-8')) as StoreShape
       cache.olympiadApplications ??= []
+      cache.messages ??= []
+      cache.supportTickets ??= []
+      cache.actionLog ??= []
+      cache.academicDebts ??= []
+      cache.absenceRecords ??= []
+      cache.expulsionRequests ??= []
     } catch {
       cache = structuredClone(EMPTY)
     }
@@ -84,6 +105,14 @@ export function update<T>(mutator: (s: StoreShape) => T): T {
   const result = mutator(s)
   save(s)
   return result
+}
+
+export function addActionLog(entry: Omit<ActionLogEntry, 'id' | 'createdAt'>): ActionLogEntry {
+  return update((s) => {
+    const item: ActionLogEntry = { id: `log-${Date.now()}-${s.actionLog.length + 1}`, createdAt: new Date().toISOString(), ...entry }
+    s.actionLog.push(item)
+    return item
+  })
 }
 
 export function isInitialized(): boolean {

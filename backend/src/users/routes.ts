@@ -1,7 +1,8 @@
 import { Router } from 'express'
 import bcrypt from 'bcryptjs'
 import { z } from 'zod'
-import { load, update } from '../db/store'
+import { addActionLog, load, update } from '../db/store'
+import type { AuthedRequest } from '../middleware/auth'
 import { requireAuth, requireRole } from '../middleware/auth'
 import { ROLES, type Role, type User } from '../types'
 
@@ -35,6 +36,7 @@ const createSchema = z.object({
   role: z.enum(ROLES as [Role, ...Role[]]),
   password: z.string().min(6, 'Минимум 6 символов'),
   classIds: z.array(z.string()).optional(),
+  subjects: z.array(z.string()).optional(),
 })
 
 usersRouter.post('/', async (req, res) => {
@@ -55,9 +57,11 @@ usersRouter.post('/', async (req, res) => {
     role: data.role,
     passwordHash: await bcrypt.hash(data.password, 10),
     classIds: data.classIds,
+    subjects: data.subjects,
     createdAt: new Date().toISOString(),
   }
   update((s) => s.users.push(user))
+  addActionLog({ userId: (req as AuthedRequest).user!.id, role: (req as AuthedRequest).user!.role, actionType: 'user_created', target: user.email, description: `Создан пользователь: ${user.role}` })
   res.status(201).json(toPublic(user))
 })
 
@@ -67,9 +71,10 @@ const patchSchema = z.object({
   role: z.enum(ROLES as [Role, ...Role[]]).optional(),
   password: z.string().min(6).optional(),
   classIds: z.array(z.string()).optional(),
+  subjects: z.array(z.string()).optional(),
 })
 
-usersRouter.patch('/:id', async (req, res) => {
+usersRouter.patch('/:id', async (req: AuthedRequest, res) => {
   const parsed = patchSchema.safeParse(req.body)
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.issues[0]?.message ?? 'Ошибка валидации' })
@@ -81,12 +86,21 @@ usersRouter.patch('/:id', async (req, res) => {
     res.status(404).json({ error: 'Пользователь не найден' })
     return
   }
+  const oldRole = user.role
   if (data.email) user.email = data.email
   if (data.fullName) user.fullName = data.fullName
   if (data.role) user.role = data.role
   if (data.classIds) user.classIds = data.classIds
+  if (data.subjects) user.subjects = data.subjects
   if (data.password) user.passwordHash = await bcrypt.hash(data.password, 10)
   update(() => undefined)
+  addActionLog({
+    userId: req.user!.id,
+    role: req.user!.role,
+    actionType: oldRole !== user.role ? 'role_changed' : 'user_updated',
+    target: user.email,
+    description: oldRole !== user.role ? `Роль изменена: ${oldRole} → ${user.role}` : 'Обновлён профиль пользователя',
+  })
   res.json(toPublic(user))
 })
 

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   Bar, BarChart, CartesianGrid, LabelList, ResponsiveContainer, XAxis, YAxis,
 } from 'recharts'
@@ -7,11 +7,23 @@ import { getStudents } from '../data/students'
 import { SUBJECT_AVERAGES, TERM_GRADES, TERM_WEEKS } from '../data/grades'
 import { IconDownload } from '../components/icons'
 import { Card, MonthSelect, PageFooter } from '../components/ui'
+import { useAuth } from '../auth/AuthContext'
 
 export function GradesPage() {
-  const [className, setClassName] = useState('7Б')
-  const students = getStudents(className)
+  const { user } = useAuth()
+  const visibleClasses = useMemo(() => {
+    if (user?.role === 'TEACHER' || user?.role === 'STUDENT') return (user.classIds ?? []).map((id) => id.replace(/^\d+-/, ''))
+    return ALL_CLASSES
+  }, [user])
+  const [className, setClassName] = useState(visibleClasses[0] ?? '7Б')
+  useEffect(() => {
+    if (visibleClasses.length && !visibleClasses.includes(className)) setClassName(visibleClasses[0])
+  }, [className, visibleClasses])
+  const students = user?.role === 'STUDENT' ? [{ id: user.id, fullName: user.fullName }] : getStudents(className)
   const [studentId, setStudentId] = useState(students[0]?.id ?? '')
+  useEffect(() => {
+    if (students.length && !students.some((s) => s.id === studentId)) setStudentId(students[0].id)
+  }, [studentId, students])
 
   const onClassChange = (value: string) => {
     setClassName(value)
@@ -24,7 +36,7 @@ export function GradesPage() {
         <div className="field">
           <span className="field__label">Выберите класс:</span>
           <select className="select" value={className} onChange={(e) => onClassChange(e.target.value)}>
-            {ALL_CLASSES.map((c) => <option key={c} value={c}>{c}</option>)}
+            {visibleClasses.map((c) => <option key={c} value={c}>{c}</option>)}
           </select>
         </div>
         <div className="field">

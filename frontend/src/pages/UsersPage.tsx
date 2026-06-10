@@ -17,7 +17,7 @@ export function UsersPage() {
     setMsg(null); setErr(null)
     try {
       await usersService.create(form)
-      setForm({ email: '', fullName: '', role: 'TEACHER', password: '' })
+      setForm({ email: '', fullName: '', role: 'TEACHER', password: '', classIds: [], subjects: [] })
       setMsg('Пользователь создан')
       reload()
     } catch (e) {
@@ -27,6 +27,10 @@ export function UsersPage() {
 
   const changeRole = async (u: PublicUser, role: Role) => {
     try { await usersService.update(u.id, { role }); reload() } catch (e) { setErr(e instanceof ApiError ? e.message : 'Ошибка') }
+  }
+
+  const updateProfile = async (u: PublicUser, patch: Partial<UserInput>) => {
+    try { await usersService.update(u.id, patch); reload() } catch (e) { setErr(e instanceof ApiError ? e.message : 'Ошибка') }
   }
 
   const remove = async (u: PublicUser) => {
@@ -48,6 +52,10 @@ export function UsersPage() {
             </select></label>
           <label className="setting-field"><span className="field__label">Пароль (мин. 6)</span>
             <input className="input" type="text" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} /></label>
+          <label className="setting-field"><span className="field__label">Классы</span>
+            <input className="input" placeholder="2026-7А, 2026-8Б" value={form.classIds?.join(', ') ?? ''} onChange={(e) => setForm({ ...form, classIds: e.target.value.split(',').map((x) => x.trim()).filter(Boolean) })} /></label>
+          <label className="setting-field"><span className="field__label">Предметы</span>
+            <input className="input" placeholder="Математика" value={form.subjects?.join(', ') ?? ''} onChange={(e) => setForm({ ...form, subjects: e.target.value.split(',').map((x) => x.trim()).filter(Boolean) })} /></label>
         </div>
         <div className="flex" style={{ gap: 12, marginTop: 14 }}>
           <button className="btn-primary" onClick={create}>Создать</button>
@@ -62,7 +70,7 @@ export function UsersPage() {
         ) : (
           <div className="table-wrap">
             <table className="tbl tbl--compact">
-              <thead><tr><th>ФИО</th><th>Email</th><th>Роль</th><th></th></tr></thead>
+              <thead><tr><th>ФИО</th><th>Email</th><th>Роль</th><th>Классы</th><th>Предметы</th><th></th></tr></thead>
               <tbody>
                 {users.map((u) => (
                   <tr key={u.id}>
@@ -73,6 +81,8 @@ export function UsersPage() {
                         {ROLES.map((r) => <option key={r} value={r}>{ROLE_LABELS[r]}</option>)}
                       </select>
                     </td>
+                    <td><input className="input" defaultValue={u.classIds?.join(', ') ?? ''} onBlur={(e) => updateProfile(u, { classIds: e.target.value.split(',').map((x) => x.trim()).filter(Boolean) })} /></td>
+                    <td><input className="input" defaultValue={u.subjects?.join(', ') ?? ''} onBlur={(e) => updateProfile(u, { subjects: e.target.value.split(',').map((x) => x.trim()).filter(Boolean) })} /></td>
                     <td><button className="btn" onClick={() => remove(u)}>Удалить</button></td>
                   </tr>
                 ))}

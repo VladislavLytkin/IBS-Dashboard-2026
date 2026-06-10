@@ -553,7 +553,9 @@ table.tbl tbody tr:hover { background: var(--th-bg); }
 .btn-primary:hover { background: #1d4ed8; }
 .btn-primary:disabled { opacity: 0.6; cursor: default; }
 .form-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+.form-grid--single { grid-template-columns: 1fr; }
 .setting-field { display: flex; flex-direction: column; gap: 6px; }
+.textarea { min-height: 96px; resize: vertical; }
 .toggle-row { display: flex; align-items: center; gap: 10px; padding: 7px 0; font-size: 14px; }
 .toggle-row input { width: 18px; height: 18px; accent-color: var(--blue); }
 
@@ -671,6 +673,16 @@ table.tbl tbody tr:hover { background: var(--th-bg); }
 .action-stack, .reject-box { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .reject-box { margin-top: 8px; }
 .empty--compact { padding: 28px 16px; }
+.message-list { display: grid; gap: 10px; }
+.message-item {
+  display: grid; gap: 5px; width: 100%; text-align: left; padding: 12px;
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--card); color: var(--text);
+}
+.message-item:hover, .message-item:focus-visible { border-color: var(--blue); background: var(--blue-soft); outline: none; }
+.message-item.is-unread { border-color: var(--blue); box-shadow: inset 3px 0 0 var(--blue); }
+.message-item__type { width: fit-content; color: var(--blue); font-size: 12px; font-weight: 700; }
+.message-item small { color: var(--text-soft); }
 
 :root[data-theme='dark'] .login { background: #0f172a; }
 :root[data-theme='dark'] .login__card,

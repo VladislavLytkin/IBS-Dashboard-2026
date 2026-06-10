@@ -26,10 +26,14 @@ const MAIN_NAV: NavItem[] = [
   { to: '/risks', label: 'Риски', Icon: IconRisk, roles: ['DIRECTOR', 'HEAD_TEACHER', 'TEACHER', 'STUDENT', 'ANALYST'] },
   { to: '/students', label: 'Ученики', Icon: IconStudent, roles: ['HEAD_TEACHER', 'TEACHER'] },
   { to: '/classes', label: 'Классы', Icon: IconUsers, roles: ['DIRECTOR', 'HEAD_TEACHER', 'TEACHER'] },
+  { to: '/teaching-actions', label: 'Учебные действия', Icon: IconGrades, roles: ['TEACHER', 'HEAD_TEACHER', 'DIRECTOR'] },
+  { to: '/messenger', label: 'Мессенджер', Icon: IconReport, roles: ['DIRECTOR', 'HEAD_TEACHER', 'TEACHER', 'STUDENT', 'ADMIN'] },
 ]
 
 const SECONDARY_NAV: NavItem[] = [
   { to: '/reports', label: 'Отчёты', Icon: IconReport, roles: ['DIRECTOR', 'ADMIN', 'ANALYST'] },
+  { to: '/support', label: 'Поддержка', Icon: IconSettings, roles: ['ADMIN', 'DIRECTOR', 'HEAD_TEACHER', 'TEACHER', 'STUDENT'] },
+  { to: '/action-log', label: 'Журнал действий', Icon: IconChart, roles: ['ADMIN', 'DIRECTOR'] },
   { to: '/settings', label: 'Настройки', Icon: IconSettings, roles: ['ADMIN', 'DIRECTOR'] },
   { to: '/users', label: 'Пользователи', Icon: IconUsers, roles: ['ADMIN'] },
 ]

@@ -20,6 +20,7 @@ export interface PublicUser {
   fullName: string
   role: Role
   classIds?: string[]
+  subjects?: string[]
   createdAt: string
 }
 
@@ -185,4 +186,98 @@ export interface OlympiadApplication {
   createdAt: string
   reviewedAt?: string
   reviewedBy?: string
+}
+
+export type InternalMessageType =
+  | 'message'
+  | 'office_call'
+  | 'academic_debt'
+  | 'risk_comment'
+  | 'absence_comment'
+  | 'system'
+  | 'support'
+
+export interface InternalMessage {
+  id: string
+  fromUserId: string
+  toUserId: string
+  fromRole: Role
+  toRole: Role
+  type: InternalMessageType
+  title: string
+  text: string
+  createdAt: string
+  isRead: boolean
+  replyToId?: string
+  meta?: Record<string, string>
+}
+
+export type SupportTicketStatus = 'new' | 'in_progress' | 'resolved' | 'rejected'
+export type SupportTicketPriority = 'low' | 'medium' | 'high'
+
+export interface SupportTicket {
+  id: string
+  createdBy: string
+  createdByRole: Role
+  subject: string
+  category: 'data_error' | 'access_problem' | 'ui_error' | 'notifications_problem' | 'other'
+  description: string
+  priority: SupportTicketPriority
+  status: SupportTicketStatus
+  createdAt: string
+  adminReply?: string
+  updatedAt?: string
+}
+
+export type AcademicDebtStatus = 'assigned' | 'in_progress' | 'closed' | 'overdue'
+export interface AcademicDebt {
+  id: string
+  studentId: string
+  studentName: string
+  classId: string
+  subject: string
+  topic: string
+  reason: string
+  dueDate: string
+  comment: string
+  status: AcademicDebtStatus
+  createdBy: string
+  createdAt: string
+}
+
+export type AbsenceType = 'excused' | 'truancy'
+export interface AbsenceRecord {
+  id: string
+  studentId: string
+  studentName: string
+  classId: string
+  date: string
+  lesson: string
+  subject: string
+  type: AbsenceType
+  reasonOrComment: string
+  createdBy: string
+  createdAt: string
+}
+
+export type ExpulsionStatus = 'initiated' | 'review' | 'confirmed' | 'cancelled'
+export interface ExpulsionRequest {
+  id: string
+  studentId: string
+  studentName: string
+  classId: string
+  writtenReason: string
+  status: ExpulsionStatus
+  createdBy: string
+  createdAt: string
+}
+
+export interface ActionLogEntry {
+  id: string
+  userId: string
+  role: Role
+  actionType: string
+  target: string
+  description: string
+  createdAt: string
 }

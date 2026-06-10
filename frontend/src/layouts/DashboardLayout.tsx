@@ -17,6 +17,10 @@ const TITLES: Record<string, string> = {
   '/settings': 'Настройки',
   '/users': 'Пользователи',
   '/grades': 'Оценки (журнал)',
+  '/messenger': 'Внутренний мессенджер',
+  '/support': 'Поддержка',
+  '/action-log': 'Журнал действий',
+  '/teaching-actions': 'Учебные действия',
 }
 
 export function DashboardLayout() {

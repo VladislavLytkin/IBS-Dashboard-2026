@@ -1,6 +1,6 @@
 import { Router } from 'express'
 import { z } from 'zod'
-import { load, update } from '../db/store'
+import { addActionLog, load, update } from '../db/store'
 import { requireAuth } from '../middleware/auth'
 import { parseFilters } from '../utils/query'
 import { olympiadByClass, olympiadComparison, olympiadRating } from '../data/generate'
@@ -71,6 +71,7 @@ olympiadsRouter.post('/applications', (req: AuthedRequest, res) => {
     ...parsed.data,
   }
   update((s) => s.olympiadApplications.push(item))
+  addActionLog({ userId: user.id, role: user.role, actionType: 'olympiad_application_created', target: item.title, description: `${item.studentName}: ${item.subject}` })
   res.status(201).json(item)
 })
 
@@ -100,5 +101,6 @@ olympiadsRouter.patch('/applications/:id', (req: AuthedRequest, res) => {
     res.status(404).json({ error: 'Заявка не найдена' })
     return
   }
+  addActionLog({ userId: req.user!.id, role: req.user!.role, actionType: `olympiad_${status}`, target: req.params.id, description: status === 'approved' ? 'Олимпиадная заявка подтверждена' : 'Олимпиадная заявка отклонена' })
   res.json(result)
 })

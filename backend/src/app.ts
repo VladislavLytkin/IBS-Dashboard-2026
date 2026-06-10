@@ -14,6 +14,7 @@ import { risksRouter } from './risks/routes'
 import { settingsRouter } from './settings/routes'
 import { notificationsRouter } from './notifications/routes'
 import { reportsRouter } from './reports/routes'
+import { workflowRouter } from './workflow/routes'
 
 export function createApp() {
   const app = express()
@@ -36,6 +37,7 @@ export function createApp() {
   app.use('/api/settings', settingsRouter)
   app.use('/api/notifications', notificationsRouter)
   app.use('/api/reports', reportsRouter)
+  app.use('/api/workflow', workflowRouter)
 
   app.use((_req, res) => res.status(404).json({ error: 'Маршрут не найден' }))
 

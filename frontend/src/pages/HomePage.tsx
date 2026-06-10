@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import type { ParallelFilterValue } from '../types'
-import { dashboardService, olympiadsService } from '../services'
+import { dashboardService, olympiadsService, risksService } from '../services'
 import { useAuth } from '../auth/AuthContext'
 import { useFilters } from '../context/FiltersContext'
 import { useApi } from '../hooks/useApi'
@@ -18,6 +18,7 @@ export function HomePage() {
   const summary = useApi(() => dashboardService.summary({ year, grade }), [year, grade])
   const rating = useApi(() => dashboardService.classRating({ year, grade }), [year, grade])
   const applications = useApi(() => olympiadsService.applications(), [])
+  const ownRisk = useApi(() => risksService.list({ year }), [year])
   const rows = rating.data ?? []
   const s = summary.data
   const pendingOlympiads = (applications.data ?? []).filter((a) => a.status === 'pending').length
@@ -26,6 +27,42 @@ export function HomePage() {
   const strong = rows.slice(0, 3)
   const problem = [...rows].sort((a, b) => a.finalScore - b.finalScore).slice(0, 3)
   const quickActions = getQuickActions(user?.role)
+
+  if (user?.role === 'STUDENT') {
+    const risk = ownRisk.data?.[0]
+    const apps = applications.data ?? []
+    return (
+      <div className="page">
+        <div className="toolbar">
+          <button className="btn btn--ghost-blue toolbar__spacer" onClick={() => setShowFormula(true)}><IconInfo /> Как рассчитывается рейтинг?</button>
+        </div>
+        <div className="grid grid-4">
+          <MiniStat label="Мой риск" value={risk ? risk.riskLevel : '—'} color={risk?.riskLevel === 'высокий' ? 'red' : risk?.riskLevel === 'средний' ? 'orange' : 'green'} />
+          <MiniStat label="riskScore" value={risk ? String(risk.riskScore) : '—'} color="blue" />
+          <MiniStat label="Мои заявки" value={String(apps.length)} color="purple" />
+          <MiniStat label="На проверке" value={String(apps.filter((a) => a.status === 'pending').length)} color="orange" />
+        </div>
+        <div className="grid grid-2-wide">
+          <Card title="Личная сводка">
+            {ownRisk.loading ? <EmptyState message="Загрузка личных данных…" /> : risk ? (
+              <>
+                <div className="flex-between"><span className="text-muted">Класс {risk.classId.replace(/^\d+-/, '')}</span><span className={risk.riskLevel === 'высокий' ? 'badge badge--risk-high' : risk.riskLevel === 'средний' ? 'badge badge--risk-mid' : 'badge badge--risk-low'}>{risk.riskLevel}</span></div>
+                <h3 style={{ fontSize: 14, margin: '16px 0 8px' }}>Рекомендации</h3>
+                <ul className="reco-list">{risk.recommendations.map((r) => <li key={r}>{r}</li>)}</ul>
+              </>
+            ) : <EmptyState message="Личные данные не найдены." />}
+          </Card>
+          <Card title="Быстрые действия">
+            <div className="quick-actions">
+              {quickActions.map((a) => <Link key={a.to} to={a.to} className="quick-action">{a.label}</Link>)}
+            </div>
+          </Card>
+        </div>
+        <PageFooter />
+        {showFormula && <RatingModal onClose={() => setShowFormula(false)} />}
+      </div>
+    )
+  }
 
   return (
     <div className="page">

@@ -22,6 +22,7 @@ export function ProfileModal({ user, onClose }: { user: PublicUser; onClose: () 
         <dl className="profile-list">
           <div><dt>Роль</dt><dd>{ROLE_LABELS[user.role]}</dd></div>
           <div><dt>Доступные классы</dt><dd>{user.classIds?.map((x) => x.replace(/^\d+-/, '')).join(', ') || 'Все доступные по роли'}</dd></div>
+          <div><dt>Предметы</dt><dd>{user.subjects?.join(', ') || 'Не указаны'}</dd></div>
           <div><dt>Создан</dt><dd>{new Date(user.createdAt).toLocaleDateString('ru-RU')}</dd></div>
         </dl>
       </section>

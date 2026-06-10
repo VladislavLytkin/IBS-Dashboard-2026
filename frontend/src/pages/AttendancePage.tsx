@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts'
@@ -10,6 +10,7 @@ import {
 import { ALL_CLASSES } from '../data/classes'
 import { getStudents } from '../data/students'
 import { Card, MonthSelect, PageFooter } from '../components/ui'
+import { useAuth } from '../auth/AuthContext'
 
 const MARK_LETTER: Record<AttendanceMark, string> = {
   present: 'П', absent: 'О', truancy: 'Н', weekend: 'В',
@@ -19,10 +20,21 @@ const MARK_CLASS: Record<AttendanceMark, string> = {
 }
 
 export function AttendancePage() {
-  const [className, setClassName] = useState('7Б')
+  const { user } = useAuth()
+  const visibleClasses = useMemo(() => {
+    if (user?.role === 'TEACHER' || user?.role === 'STUDENT') return (user.classIds ?? []).map((id) => id.replace(/^\d+-/, ''))
+    return ALL_CLASSES
+  }, [user])
+  const [className, setClassName] = useState(visibleClasses[0] ?? '7Б')
+  useEffect(() => {
+    if (visibleClasses.length && !visibleClasses.includes(className)) setClassName(visibleClasses[0])
+  }, [className, visibleClasses])
   const [absenceTab, setAbsenceTab] = useState<'excused' | 'truancy'>('excused')
-  const students = getStudents(className)
+  const students = user?.role === 'STUDENT' ? [{ id: user.id, fullName: user.fullName }] : getStudents(className)
   const [studentId, setStudentId] = useState(students[0]?.id ?? '')
+  useEffect(() => {
+    if (students.length && !students.some((s) => s.id === studentId)) setStudentId(students[0].id)
+  }, [studentId, students])
 
   const { totalLessons, present, absent, truancy } = ATTENDANCE_SUMMARY
   const pct = (n: number) => `${((n / totalLessons) * 100).toFixed(1).replace('.', ',')}%`
@@ -38,7 +50,7 @@ export function AttendancePage() {
         <div className="field">
           <span className="field__label">Выберите класс:</span>
           <select className="select" value={className} onChange={(e) => onClassChange(e.target.value)}>
-            {ALL_CLASSES.map((c) => <option key={c} value={c}>{c}</option>)}
+            {visibleClasses.map((c) => <option key={c} value={c}>{c}</option>)}
           </select>
         </div>
         <div className="field">

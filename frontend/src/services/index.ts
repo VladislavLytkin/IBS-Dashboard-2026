@@ -1,8 +1,9 @@
 import { apiDelete, apiDownload, apiGet, apiPatch, apiPost, buildQuery } from '../api/client'
 import type {
   ApiClassInfo, ApiStudent, AppNotification, AppSettings, DashboardSummary,
-  ExamComparisonResponse, OlympiadApplication, OlympiadComparisonResponse, OlympiadRatingRow, PublicUser,
-  ReportHistoryItem, ReportType, RiskPrediction, Role,
+  AcademicDebt, ActionLogEntry, AbsenceRecord, ExamComparisonResponse, ExpulsionRequest, InternalMessage,
+  InternalMessageType, OlympiadApplication, OlympiadComparisonResponse, OlympiadRatingRow, PublicUser,
+  ReportHistoryItem, ReportType, RiskPrediction, Role, SupportTicket, SupportTicketStatus,
 } from '../api/types'
 
 export interface Filters {
@@ -75,6 +76,29 @@ export const notificationsService = {
   markAllRead: () => apiPatch<{ ok: true }>('/notifications/read-all'),
 }
 
+// ===================== Workflow: messages / support / action log =====================
+export const workflowService = {
+  recipients: () => apiGet<PublicUser[]>('/workflow/recipients'),
+  messages: (type: InternalMessageType | 'all' = 'all') => apiGet<InternalMessage[]>(`/workflow/messages${buildQuery({ type })}`),
+  sendMessage: (data: { toUserId: string; type: InternalMessageType; title: string; text: string; replyToId?: string; meta?: Record<string, string> }) =>
+    apiPost<InternalMessage>('/workflow/messages', data),
+  markMessageRead: (id: string) => apiPatch<InternalMessage>(`/workflow/messages/${id}/read`),
+  support: (filters?: { status?: string; role?: string }) => apiGet<SupportTicket[]>(`/workflow/support${buildQuery({ status: filters?.status, role: filters?.role })}`),
+  createSupport: (data: { subject: string; category: SupportTicket['category']; description: string; priority: SupportTicket['priority'] }) =>
+    apiPost<SupportTicket>('/workflow/support', data),
+  updateSupport: (id: string, status: SupportTicketStatus, adminReply?: string) =>
+    apiPatch<SupportTicket>(`/workflow/support/${id}`, { status, adminReply }),
+  absences: (year: number) => apiGet<AbsenceRecord[]>(`/workflow/absences${buildQuery({ year })}`),
+  createAbsence: (data: { studentId: string; date: string; lesson: string; subject: string; type: AbsenceRecord['type']; reasonOrComment: string }) =>
+    apiPost<AbsenceRecord>('/workflow/absences', data),
+  debts: (year: number) => apiGet<AcademicDebt[]>(`/workflow/debts${buildQuery({ year })}`),
+  createDebt: (data: { studentId: string; subject: string; topic: string; reason: string; dueDate: string; comment: string }) =>
+    apiPost<AcademicDebt>('/workflow/debts', data),
+  expulsions: () => apiGet<ExpulsionRequest[]>('/workflow/expulsions'),
+  createExpulsion: (data: { studentId: string; writtenReason: string }) => apiPost<ExpulsionRequest>('/workflow/expulsions', data),
+  actionLog: () => apiGet<ActionLogEntry[]>('/workflow/action-log'),
+}
+
 // ===================== Reports =====================
 export const reportsService = {
   history: () => apiGet<ReportHistoryItem[]>('/reports/history'),
@@ -90,6 +114,7 @@ export interface UserInput {
   role: Role
   password?: string
   classIds?: string[]
+  subjects?: string[]
 }
 export const usersService = {
   list: () => apiGet<PublicUser[]>('/users'),

@@ -1,5 +1,5 @@
 import { useMemo, useState, type FormEvent, type ReactNode } from 'react'
-import type { OlympiadApplicationStatus } from '../api/types'
+import type { OlympiadApplication, OlympiadApplicationStatus } from '../api/types'
 import type { ParallelFilterValue } from '../types'
 import { olympiadsService } from '../services'
 import { useAuth } from '../auth/AuthContext'
@@ -28,6 +28,27 @@ export function OlympiadsPage() {
     () => (ranking.length ? Math.round((ranking.reduce((s, r) => s + r.index, 0) / ranking.length) * 10) / 10 : 0),
     [ranking],
   )
+
+  if (user?.role === 'STUDENT') {
+    return (
+      <div className="page">
+        <StudentApplicationForm userName={user.fullName} classId={user.classIds?.[0] ?? `${year}-11Б`} onCreated={applications.reload} />
+        <ApplicationsCard
+          role={user.role}
+          rows={appRows}
+          loading={applications.loading}
+          appStatus={appStatus}
+          setAppStatus={setAppStatus}
+          onReload={() => { applications.reload(); rating.reload() }}
+          rejectingId={rejectingId}
+          setRejectingId={setRejectingId}
+          rejectReason={rejectReason}
+          setRejectReason={setRejectReason}
+        />
+        <PageFooter />
+      </div>
+    )
+  }
 
   return (
     <div className="page">
@@ -79,62 +100,81 @@ export function OlympiadsPage() {
         </Card>
       </div>
 
-      {user?.role === 'STUDENT' && <StudentApplicationForm userName={user.fullName} classId={user.classIds?.[0] ?? `${year}-11Б`} onCreated={applications.reload} />}
-
-      {(user?.role === 'ADMIN' || user?.role === 'STUDENT' || user?.role === 'TEACHER') && (
-        <Card
-          title={user.role === 'ADMIN' ? 'Валидация олимпиадных заявок' : 'Мои олимпиадные заявки'}
-          headerRight={
-            <select className="select" value={appStatus} onChange={(e) => setAppStatus(e.target.value as typeof appStatus)}>
-              <option value="all">Все статусы</option>
-              <option value="pending">Ожидает проверки</option>
-              <option value="approved">Подтверждена</option>
-              <option value="rejected">Отклонена</option>
-            </select>
-          }
-        >
-          {applications.loading ? <EmptyState message="Загрузка заявок…" /> : appRows.length === 0 ? <EmptyState message="Заявок по выбранному фильтру нет." /> : (
-            <div className="table-wrap">
-              <table className="tbl tbl--compact tbl--cards">
-                <thead>
-                  <tr><th>Олимпиада</th><th>Ученик</th><th>Предмет</th><th>Дата</th><th>Результат</th><th>Статус</th>{user.role === 'ADMIN' && <th>Действия</th>}</tr>
-                </thead>
-                <tbody>
-                  {appRows.map((a) => (
-                    <tr key={a.id}>
-                      <td className="td-strong" data-label="Олимпиада">{a.title}<div className="text-muted">{a.level}</div></td>
-                      <td data-label="Ученик">{a.studentName}<div className="text-muted">{a.classId.replace(/^\d+-/, '')}</div></td>
-                      <td data-label="Предмет">{a.subject}</td>
-                      <td data-label="Дата">{new Date(a.participationDate).toLocaleDateString('ru-RU')}</td>
-                      <td data-label="Результат">{a.result}<div className="text-muted">{a.placeOrDegree || '—'}</div></td>
-                      <td data-label="Статус"><StatusBadge status={a.status} />{a.rejectionReason && <div className="text-red">{a.rejectionReason}</div>}</td>
-                      {user.role === 'ADMIN' && (
-                        <td data-label="Действия">
-                          {a.status === 'pending' ? (
-                            <div className="action-stack">
-                              <button className="btn btn--ghost-blue" onClick={async () => { await olympiadsService.reviewApplication(a.id, 'approved'); applications.reload(); rating.reload() }}>Подтвердить</button>
-                              <button className="btn" onClick={() => setRejectingId(a.id)}>Отклонить</button>
-                              {rejectingId === a.id && (
-                                <div className="reject-box">
-                                  <input className="input" placeholder="Причина отклонения" value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} />
-                                  <button className="btn-primary" onClick={async () => { await olympiadsService.reviewApplication(a.id, 'rejected', rejectReason); setRejectingId(null); setRejectReason(''); applications.reload() }}>Сохранить</button>
-                                </div>
-                              )}
-                            </div>
-                          ) : <span className="text-muted">Проверено</span>}
-                        </td>
-                      )}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </Card>
+      {(user?.role === 'ADMIN' || user?.role === 'TEACHER') && (
+        <ApplicationsCard
+          role={user.role}
+          rows={appRows}
+          loading={applications.loading}
+          appStatus={appStatus}
+          setAppStatus={setAppStatus}
+          onReload={() => { applications.reload(); rating.reload() }}
+          rejectingId={rejectingId}
+          setRejectingId={setRejectingId}
+          rejectReason={rejectReason}
+          setRejectReason={setRejectReason}
+        />
       )}
 
       <PageFooter />
     </div>
+  )
+}
+
+function ApplicationsCard({
+  role, rows, loading, appStatus, setAppStatus, onReload, rejectingId, setRejectingId, rejectReason, setRejectReason,
+}: {
+  role: 'ADMIN' | 'TEACHER' | 'STUDENT'
+  rows: OlympiadApplication[]
+  loading: boolean
+  appStatus: OlympiadApplicationStatus | 'all'
+  setAppStatus: (v: OlympiadApplicationStatus | 'all') => void
+  onReload: () => void
+  rejectingId: string | null
+  setRejectingId: (id: string | null) => void
+  rejectReason: string
+  setRejectReason: (v: string) => void
+}) {
+  return (
+    <Card
+      title={role === 'ADMIN' ? 'Валидация олимпиадных заявок' : role === 'STUDENT' ? 'Мои олимпиадные заявки' : 'Заявки моих учеников'}
+      headerRight={
+        <select className="select" value={appStatus} onChange={(e) => setAppStatus(e.target.value as typeof appStatus)}>
+          <option value="all">Все статусы</option>
+          <option value="pending">Ожидает проверки</option>
+          <option value="approved">Подтверждена</option>
+          <option value="rejected">Отклонена</option>
+        </select>
+      }
+    >
+      {loading ? <EmptyState message="Загрузка заявок…" /> : rows.length === 0 ? <EmptyState message="Заявок по выбранному фильтру нет." /> : (
+        <div className="table-wrap">
+          <table className="tbl tbl--compact tbl--cards">
+            <thead><tr><th>Олимпиада</th><th>Ученик</th><th>Предмет</th><th>Дата</th><th>Результат</th><th>Статус</th>{role === 'ADMIN' && <th>Действия</th>}</tr></thead>
+            <tbody>{rows.map((a) => (
+              <tr key={a.id}>
+                <td className="td-strong" data-label="Олимпиада">{a.title}<div className="text-muted">{a.level}</div></td>
+                <td data-label="Ученик">{a.studentName}<div className="text-muted">{a.classId.replace(/^\d+-/, '')}</div></td>
+                <td data-label="Предмет">{a.subject}</td>
+                <td data-label="Дата">{new Date(a.participationDate).toLocaleDateString('ru-RU')}</td>
+                <td data-label="Результат">{a.result}<div className="text-muted">{a.placeOrDegree || '—'}</div></td>
+                <td data-label="Статус"><StatusBadge status={a.status} />{a.rejectionReason && <div className="text-red">{a.rejectionReason}</div>}</td>
+                {role === 'ADMIN' && (
+                  <td data-label="Действия">
+                    {a.status === 'pending' ? (
+                      <div className="action-stack">
+                        <button className="btn btn--ghost-blue" onClick={async () => { await olympiadsService.reviewApplication(a.id, 'approved'); onReload() }}>Подтвердить</button>
+                        <button className="btn" onClick={() => setRejectingId(a.id)}>Отклонить</button>
+                        {rejectingId === a.id && <div className="reject-box"><input className="input" placeholder="Причина отклонения" value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} /><button className="btn-primary" onClick={async () => { await olympiadsService.reviewApplication(a.id, 'rejected', rejectReason); setRejectingId(null); setRejectReason(''); onReload() }}>Сохранить</button></div>}
+                      </div>
+                    ) : <span className="text-muted">Проверено</span>}
+                  </td>
+                )}
+              </tr>
+            ))}</tbody>
+          </table>
+        </div>
+      )}
+    </Card>
   )
 }
 
