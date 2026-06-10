@@ -1,0 +1,87 @@
+import { useState } from 'react'
+import type { PublicUser, Role } from '../api/types'
+import { ROLES, ROLE_LABELS } from '../api/types'
+import { usersService, type UserInput } from '../services'
+import { ApiError } from '../api/client'
+import { useApi } from '../hooks/useApi'
+import { Card, EmptyState, PageFooter } from '../components/ui'
+
+export function UsersPage() {
+  const { data, loading, error, reload } = useApi(() => usersService.list(), [])
+  const users = data ?? []
+  const [form, setForm] = useState<UserInput>({ email: '', fullName: '', role: 'TEACHER', password: '' })
+  const [msg, setMsg] = useState<string | null>(null)
+  const [err, setErr] = useState<string | null>(null)
+
+  const create = async () => {
+    setMsg(null); setErr(null)
+    try {
+      await usersService.create(form)
+      setForm({ email: '', fullName: '', role: 'TEACHER', password: '' })
+      setMsg('Пользователь создан')
+      reload()
+    } catch (e) {
+      setErr(e instanceof ApiError ? e.message : 'Ошибка создания')
+    }
+  }
+
+  const changeRole = async (u: PublicUser, role: Role) => {
+    try { await usersService.update(u.id, { role }); reload() } catch (e) { setErr(e instanceof ApiError ? e.message : 'Ошибка') }
+  }
+
+  const remove = async (u: PublicUser) => {
+    if (!confirm(`Удалить пользователя ${u.email}?`)) return
+    try { await usersService.remove(u.id); reload() } catch (e) { setErr(e instanceof ApiError ? e.message : 'Ошибка') }
+  }
+
+  return (
+    <div className="page">
+      <Card title="Создать пользователя">
+        <div className="form-grid">
+          <label className="setting-field"><span className="field__label">Email</span>
+            <input className="input" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="user@school123.local" /></label>
+          <label className="setting-field"><span className="field__label">ФИО</span>
+            <input className="input" value={form.fullName} onChange={(e) => setForm({ ...form, fullName: e.target.value })} /></label>
+          <label className="setting-field"><span className="field__label">Роль</span>
+            <select className="select" value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value as Role })}>
+              {ROLES.map((r) => <option key={r} value={r}>{ROLE_LABELS[r]}</option>)}
+            </select></label>
+          <label className="setting-field"><span className="field__label">Пароль (мин. 6)</span>
+            <input className="input" type="text" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} /></label>
+        </div>
+        <div className="flex" style={{ gap: 12, marginTop: 14 }}>
+          <button className="btn-primary" onClick={create}>Создать</button>
+          {msg && <span className="text-green">{msg}</span>}
+          {err && <span className="text-red">{err}</span>}
+        </div>
+      </Card>
+
+      <Card title="Пользователи">
+        {loading ? <EmptyState message="Загрузка…" /> : error ? <EmptyState message={error} /> : users.length === 0 ? (
+          <EmptyState message="Нет пользователей." />
+        ) : (
+          <div className="table-wrap">
+            <table className="tbl tbl--compact">
+              <thead><tr><th>ФИО</th><th>Email</th><th>Роль</th><th></th></tr></thead>
+              <tbody>
+                {users.map((u) => (
+                  <tr key={u.id}>
+                    <td className="td-strong">{u.fullName}</td>
+                    <td className="text-muted">{u.email}</td>
+                    <td>
+                      <select className="select" value={u.role} onChange={(e) => changeRole(u, e.target.value as Role)} style={{ minWidth: 150 }}>
+                        {ROLES.map((r) => <option key={r} value={r}>{ROLE_LABELS[r]}</option>)}
+                      </select>
+                    </td>
+                    <td><button className="btn" onClick={() => remove(u)}>Удалить</button></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Card>
+      <PageFooter />
+    </div>
+  )
+}

@@ -4,26 +4,35 @@ import { Sidebar } from '../components/Sidebar'
 import { Topbar } from '../components/Topbar'
 
 const TITLES: Record<string, string> = {
-  '/': 'Главный экран — Общий рейтинг классов (параллель)',
-  '/grades': 'Оценки',
-  '/olympiads': 'Рейтинг олимпиад',
-  '/volunteering': 'СПД (волонтёрство)',
+  '/': 'Главная — обзор школы',
+  '/final-rating': 'Итоговый рейтинг классов',
+  '/exams': 'Оценки / ЕГЭ — сравнение результатов',
+  '/olympiads': 'Олимпиады',
   '/attendance': 'Посещаемость',
-  '/exams': 'Экзамены',
+  '/volunteering': 'Активность (СПД)',
   '/risks': 'Риски — ML-прогноз',
-  '/student-rating': 'Итоговый рейтинг учеников',
+  '/students': 'Ученики',
+  '/classes': 'Классы',
   '/reports': 'Отчёты',
   '/settings': 'Настройки',
+  '/users': 'Пользователи',
+  '/grades': 'Оценки (журнал)',
 }
 
 export function DashboardLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [collapsed, setCollapsed] = useState(false)
   const { pathname } = useLocation()
   const title = TITLES[pathname] ?? 'Мониторинг школы'
 
   return (
-    <div className="app-shell">
-      <Sidebar open={sidebarOpen} onNavigate={() => setSidebarOpen(false)} />
+    <div className={`app-shell${collapsed ? ' is-collapsed' : ''}`}>
+      <Sidebar
+        open={sidebarOpen}
+        collapsed={collapsed}
+        onToggleCollapse={() => setCollapsed((v) => !v)}
+        onNavigate={() => setSidebarOpen(false)}
+      />
       <div className="main">
         <Topbar title={title} onBurger={() => setSidebarOpen((v) => !v)} />
         <Outlet />

@@ -2,8 +2,8 @@
 // Mock data in src/data is typed against these so it can later be swapped for an API.
 
 // ===================== Базовые =====================
-export type GradeLevel = 5 | 6 | 7 | 8 | 9 | 10 | 11
-export const GRADE_LEVELS: GradeLevel[] = [5, 6, 7, 8, 9, 10, 11]
+export type GradeLevel = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11
+export const GRADE_LEVELS: GradeLevel[] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
 
 /** Значение фильтра по параллели: конкретная параллель или «Все». */
 export type ParallelFilterValue = GradeLevel | 'all'
