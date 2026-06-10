@@ -1,7 +1,7 @@
 import fs from 'fs'
 import path from 'path'
 import { ENV } from '../config/env'
-import type { AppNotification, AppSettings, ReportHistoryItem, User } from '../types'
+import type { AppNotification, AppSettings, OlympiadApplication, ReportHistoryItem, User } from '../types'
 
 // Простое JSON-хранилище для изменяемого состояния прототипа
 // (пользователи, настройки, уведомления, история отчётов).
@@ -12,13 +12,14 @@ export interface StoreShape {
   users: User[]
   settings: AppSettings
   notifications: AppNotification[]
+  olympiadApplications: OlympiadApplication[]
   reports: ReportHistoryItem[]
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
   general: {
     schoolName: 'Школа №123',
-    defaultYear: 2026,
+    defaultYear: new Date().getFullYear(),
     defaultGrade: 11,
     theme: 'light',
     language: 'ru',
@@ -35,7 +36,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   },
   reports: {
     defaultFormat: 'xlsx',
-    defaultPeriod: 2026,
+    defaultPeriod: new Date().getFullYear(),
     includeMlRisk: true,
     includeCityRegion: true,
   },
@@ -45,6 +46,7 @@ const EMPTY: StoreShape = {
   users: [],
   settings: DEFAULT_SETTINGS,
   notifications: [],
+  olympiadApplications: [],
   reports: [],
 }
 
@@ -60,6 +62,7 @@ export function load(): StoreShape {
   if (fs.existsSync(ENV.DB_FILE)) {
     try {
       cache = JSON.parse(fs.readFileSync(ENV.DB_FILE, 'utf-8')) as StoreShape
+      cache.olympiadApplications ??= []
     } catch {
       cache = structuredClone(EMPTY)
     }

@@ -1,8 +1,11 @@
 import { ROLE_LABELS } from '../api/types'
 import { useAuth } from '../auth/AuthContext'
 import { useFilters, YEARS } from '../context/FiltersContext'
-import { IconMenu } from './icons'
+import { useTheme } from '../context/ThemeContext'
+import { IconMenu, IconMoon, IconSun } from './icons'
 import { NotificationsBell } from './NotificationsBell'
+import { ProfileModal } from './ProfileModal'
+import { useState } from 'react'
 
 interface TopbarProps {
   title: string
@@ -16,6 +19,8 @@ function initials(name: string): string {
 export function Topbar({ title, onBurger }: TopbarProps) {
   const { user } = useAuth()
   const { year, setYear } = useFilters()
+  const { theme, toggleTheme } = useTheme()
+  const [profileOpen, setProfileOpen] = useState(false)
 
   return (
     <header className="topbar">
@@ -29,17 +34,21 @@ export function Topbar({ title, onBurger }: TopbarProps) {
             {YEARS.map((y) => <option key={y} value={y}>{y}</option>)}
           </select>
         </div>
+        <button className="topbar__icon-btn" onClick={toggleTheme} aria-label={theme === 'dark' ? 'Включить светлую тему' : 'Включить тёмную тему'}>
+          {theme === 'dark' ? <IconSun /> : <IconMoon />}
+        </button>
         <NotificationsBell />
         {user && (
           <div className="topbar__user">
             <span className="topbar__avatar">{initials(user.fullName)}</span>
             <span className="topbar__user-meta">
               <span className="topbar__user-name">{user.fullName}</span>
-              <span className="topbar__user-role">{ROLE_LABELS[user.role]}</span>
+              <button className="topbar__user-role" onClick={() => setProfileOpen(true)}>{ROLE_LABELS[user.role]}</button>
             </span>
           </div>
         )}
       </div>
+      {user && profileOpen && <ProfileModal user={user} onClose={() => setProfileOpen(false)} />}
     </header>
   )
 }

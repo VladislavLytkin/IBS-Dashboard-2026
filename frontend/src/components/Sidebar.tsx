@@ -1,11 +1,12 @@
 import { NavLink, useNavigate } from 'react-router-dom'
-import type { ComponentType, SVGProps } from 'react'
+import { useState, type ComponentType, type SVGProps } from 'react'
 import { useAuth } from '../auth/AuthContext'
 import { ROLE_LABELS, type Role } from '../api/types'
 import {
-  IconChart, IconChevronLeft, IconChevronRight, IconClock, IconExam, IconGlobe, IconHome,
+  IconChart, IconChevronLeft, IconChevronRight, IconClock, IconExam, IconGlobe, IconGrades, IconHome,
   IconLogout, IconOlympiad, IconReport, IconRisk, IconSchool, IconSettings, IconStudent, IconUsers,
 } from './icons'
+import { ProfileModal } from './ProfileModal'
 
 interface NavItem {
   to: string
@@ -16,19 +17,20 @@ interface NavItem {
 
 const MAIN_NAV: NavItem[] = [
   { to: '/', label: 'Главная', Icon: IconHome },
-  { to: '/final-rating', label: 'Итоговый рейтинг', Icon: IconChart },
-  { to: '/exams', label: 'Оценки / ЕГЭ', Icon: IconExam },
-  { to: '/olympiads', label: 'Олимпиады', Icon: IconOlympiad },
-  { to: '/attendance', label: 'Посещаемость', Icon: IconClock },
-  { to: '/volunteering', label: 'Активность', Icon: IconGlobe },
-  { to: '/risks', label: 'Риски', Icon: IconRisk },
-  { to: '/students', label: 'Ученики', Icon: IconStudent },
-  { to: '/classes', label: 'Классы', Icon: IconUsers },
+  { to: '/final-rating', label: 'Итоговый рейтинг', Icon: IconChart, roles: ['DIRECTOR', 'HEAD_TEACHER', 'ANALYST'] },
+  { to: '/exams', label: 'Экзамены', Icon: IconExam, roles: ['DIRECTOR', 'HEAD_TEACHER', 'ANALYST'] },
+  { to: '/grades', label: 'Оценки', Icon: IconGrades, roles: ['HEAD_TEACHER', 'TEACHER', 'STUDENT'] },
+  { to: '/olympiads', label: 'Олимпиады', Icon: IconOlympiad, roles: ['ADMIN', 'DIRECTOR', 'HEAD_TEACHER', 'TEACHER', 'STUDENT'] },
+  { to: '/attendance', label: 'Пропуски', Icon: IconClock, roles: ['HEAD_TEACHER', 'TEACHER', 'STUDENT'] },
+  { to: '/volunteering', label: 'Активность', Icon: IconGlobe, roles: ['HEAD_TEACHER', 'TEACHER'] },
+  { to: '/risks', label: 'Риски', Icon: IconRisk, roles: ['DIRECTOR', 'HEAD_TEACHER', 'TEACHER', 'STUDENT', 'ANALYST'] },
+  { to: '/students', label: 'Ученики', Icon: IconStudent, roles: ['HEAD_TEACHER', 'TEACHER'] },
+  { to: '/classes', label: 'Классы', Icon: IconUsers, roles: ['DIRECTOR', 'HEAD_TEACHER', 'TEACHER'] },
 ]
 
 const SECONDARY_NAV: NavItem[] = [
-  { to: '/reports', label: 'Отчёты', Icon: IconReport },
-  { to: '/settings', label: 'Настройки', Icon: IconSettings },
+  { to: '/reports', label: 'Отчёты', Icon: IconReport, roles: ['DIRECTOR', 'ADMIN', 'ANALYST'] },
+  { to: '/settings', label: 'Настройки', Icon: IconSettings, roles: ['ADMIN', 'DIRECTOR'] },
   { to: '/users', label: 'Пользователи', Icon: IconUsers, roles: ['ADMIN'] },
 ]
 
@@ -46,6 +48,7 @@ function initials(name: string): string {
 export function Sidebar({ open, collapsed, onToggleCollapse, onNavigate }: SidebarProps) {
   const { user, hasRole, logout } = useAuth()
   const navigate = useNavigate()
+  const [profileOpen, setProfileOpen] = useState(false)
 
   const doLogout = async () => {
     await logout()
@@ -87,16 +90,17 @@ export function Sidebar({ open, collapsed, onToggleCollapse, onNavigate }: Sideb
         {user && (
           <div className="sidebar__profile">
             <span className="topbar__avatar">{initials(user.fullName)}</span>
-            <div className="sidebar__label sidebar__profile-meta">
+            <button className="sidebar__label sidebar__profile-meta sidebar__profile-button" onClick={() => setProfileOpen(true)}>
               <div className="sidebar__profile-name">{user.fullName}</div>
               <div className="sidebar__profile-role">{ROLE_LABELS[user.role]}</div>
-            </div>
+            </button>
             <button className="sidebar__logout" onClick={doLogout} title="Выйти" aria-label="Выйти">
               <IconLogout width={18} height={18} />
             </button>
           </div>
         )}
       </aside>
+      {user && profileOpen && <ProfileModal user={user} onClose={() => setProfileOpen(false)} />}
     </>
   )
 }

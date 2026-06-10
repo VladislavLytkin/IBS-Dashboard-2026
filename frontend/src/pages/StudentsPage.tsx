@@ -43,7 +43,7 @@ export function StudentsPage() {
             <table className="tbl tbl--compact">
               <thead>
                 <tr>
-                  <th>ФИО</th><th>Класс</th><th>Пол</th><th className="td-num">Ср. балл</th>
+                  <th>ФИО</th><th>Класс</th><th>Пол</th><th className="td-num">Ср. оценка</th>
                   <th className="td-num">Посещ. %</th><th className="td-num">Олимп.</th>
                   <th className="td-num">Активность</th><th>Риск</th>
                 </tr>

@@ -21,7 +21,7 @@ export const RISK_WEIGHTS = {
 } as const
 
 export const RISK_FACTOR_LABELS: Record<keyof RiskFactors, string> = {
-  gradeDropFactor: 'Снижение среднего балла',
+  gradeDropFactor: 'Снижение средней оценки',
   absenceFactor: 'Рост пропусков',
   lowActivityFactor: 'Низкая активность',
   noOlympiadFactor: 'Отсутствие олимпиад/проектов',
@@ -40,14 +40,14 @@ export function computeRiskScore(f: RiskFactors): number {
 }
 
 export function riskLevelFromScore(score: number): RiskLevel {
-  if (score <= 33) return 'низкий'
-  if (score <= 66) return 'средний'
+  if (score <= 50) return 'низкий'
+  if (score <= 75) return 'средний'
   return 'высокий'
 }
 
 export function riskReasons(f: RiskFactors): string[] {
   const r: string[] = []
-  if (f.gradeDropFactor >= 45) r.push('Снижение среднего балла за последние недели')
+  if (f.gradeDropFactor >= 45) r.push('Снижение средней оценки за последние недели')
   if (f.absenceFactor >= 45) r.push('Повышенное количество пропусков')
   if (f.lowActivityFactor >= 55) r.push('Низкая внеучебная активность')
   if (f.noOlympiadFactor >= 60) r.push('Нет участия в олимпиадах и проектах')

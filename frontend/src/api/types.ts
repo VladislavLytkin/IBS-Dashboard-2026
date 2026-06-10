@@ -1,12 +1,13 @@
 // Типы, отражающие ответы backend API.
-export type Role = 'ADMIN' | 'DIRECTOR' | 'HEAD_TEACHER' | 'TEACHER' | 'ANALYST'
-export const ROLES: Role[] = ['ADMIN', 'DIRECTOR', 'HEAD_TEACHER', 'TEACHER', 'ANALYST']
+export type Role = 'ADMIN' | 'DIRECTOR' | 'HEAD_TEACHER' | 'TEACHER' | 'STUDENT' | 'ANALYST'
+export const ROLES: Role[] = ['ADMIN', 'DIRECTOR', 'HEAD_TEACHER', 'TEACHER', 'STUDENT', 'ANALYST']
 
 export const ROLE_LABELS: Record<Role, string> = {
   ADMIN: 'Администратор',
   DIRECTOR: 'Директор',
   HEAD_TEACHER: 'Завуч',
   TEACHER: 'Учитель',
+  STUDENT: 'Ученик',
   ANALYST: 'Аналитик',
 }
 
@@ -101,7 +102,7 @@ export interface DashboardSummary {
   risk: { high: number; medium: number; low: number }
 }
 
-export type NotificationType = 'risk' | 'rating' | 'report' | 'attendance' | 'system'
+export type NotificationType = 'risk' | 'rating' | 'report' | 'attendance' | 'system' | 'olympiad' | 'grades'
 export interface AppNotification {
   id: string
   type: NotificationType
@@ -162,4 +163,26 @@ export interface OlympiadComparisonResponse {
   year: number
   grade: number | null
   rows: ComparisonRow[]
+}
+
+export type OlympiadApplicationStatus = 'pending' | 'approved' | 'rejected'
+
+export interface OlympiadApplication {
+  id: string
+  createdBy: string
+  studentName: string
+  classId: string
+  title: string
+  level: string
+  subject: string
+  participationDate: string
+  result: string
+  placeOrDegree: string
+  confirmationUrl: string
+  studentComment: string
+  status: OlympiadApplicationStatus
+  rejectionReason?: string
+  createdAt: string
+  reviewedAt?: string
+  reviewedBy?: string
 }

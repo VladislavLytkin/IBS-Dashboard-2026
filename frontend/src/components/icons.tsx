@@ -92,3 +92,9 @@ export const IconLogout = (p: P) => (
 export const IconCheck = (p: P) => (
   <svg {...base(p)}><path d="M20 6 9 17l-5-5" /></svg>
 )
+export const IconMoon = (p: P) => (
+  <svg {...base(p)}><path d="M21 12.8A8.5 8.5 0 1 1 11.2 3 6.5 6.5 0 0 0 21 12.8Z" /></svg>
+)
+export const IconSun = (p: P) => (
+  <svg {...base(p)}><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" /></svg>
+)

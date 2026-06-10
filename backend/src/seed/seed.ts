@@ -1,6 +1,6 @@
 import bcrypt from 'bcryptjs'
 import { DEFAULT_SETTINGS, save, type StoreShape } from '../db/store'
-import type { AppNotification, ReportHistoryItem, User } from '../types'
+import type { AppNotification, OlympiadApplication, ReportHistoryItem, User } from '../types'
 
 // =====================================================================
 // ДЕМО-ДОСТУПЫ ДЛЯ ЛОКАЛЬНОГО ПРОТОТИПА.
@@ -13,6 +13,7 @@ const DEMO_USERS: { email: string; password: string; fullName: string; role: Use
   { email: 'headteacher@school123.local', password: 'Zavuch_2026_School!', fullName: 'Завуч По УВР', role: 'HEAD_TEACHER' },
   { email: 'analyst@school123.local', password: 'Analyst_2026_Data!', fullName: 'Аналитик Данных', role: 'ANALYST' },
   { email: 'teacher@school123.local', password: 'Teacher_2026_Class!', fullName: 'Учитель Предметник', role: 'TEACHER', classIds: ['2026-11А', '2026-11Б'] },
+  { email: 'student@school123.local', password: 'Student_2026_Profile!', fullName: 'Петрова Анна', role: 'STUDENT', classIds: ['2026-11Б'] },
 ]
 
 const now = new Date()
@@ -30,6 +31,25 @@ const NOTIFICATIONS: AppNotification[] = [
 const REPORTS: ReportHistoryItem[] = [
   { id: 'r1', type: 'final-rating', year: 2026, grade: 11, classId: null, status: 'done', createdAt: iso(1), createdBy: 'director@school123.local', fileName: 'final-rating-2026-11.xlsx' },
   { id: 'r2', type: 'risks', year: 2026, grade: null, classId: null, status: 'done', createdAt: iso(3), createdBy: 'headteacher@school123.local', fileName: 'risks-2026.xlsx' },
+]
+
+const OLYMPIAD_APPLICATIONS: OlympiadApplication[] = [
+  {
+    id: 'oa1',
+    createdBy: 'student',
+    studentName: 'Петрова Анна',
+    classId: '2026-11Б',
+    title: 'Высшая проба',
+    level: 'перечневая',
+    subject: 'Математика',
+    participationDate: '2026-02-18',
+    result: 'призёр',
+    placeOrDegree: 'призёр 3 степени',
+    confirmationUrl: 'https://example.edu/olympiad-proof',
+    studentComment: 'Добавляю диплом для проверки.',
+    status: 'pending',
+    createdAt: iso(2),
+  },
 ]
 
 async function main() {
@@ -50,6 +70,7 @@ async function main() {
     users,
     settings: DEFAULT_SETTINGS,
     notifications: NOTIFICATIONS,
+    olympiadApplications: OLYMPIAD_APPLICATIONS,
     reports: REPORTS,
   }
   save(store)

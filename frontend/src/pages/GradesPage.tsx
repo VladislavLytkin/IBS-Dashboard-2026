@@ -38,7 +38,7 @@ export function GradesPage() {
         </div>
       </div>
 
-      <Card title="Средний балл по предметам за месяц">
+      <Card title="Средняя оценка по предметам за месяц">
         <div className="chart-box" style={{ height: 300 }}>
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={SUBJECT_AVERAGES} margin={{ top: 24, right: 8, left: -16, bottom: 4 }}>

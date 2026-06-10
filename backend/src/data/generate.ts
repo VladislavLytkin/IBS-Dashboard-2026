@@ -121,12 +121,31 @@ function buildStudents(cls: ClassInfo): Student[] {
     const last = pick(rnd, female ? LAST_F : LAST_M)
     const id = `${cls.id}-s${i + 1}`
 
-    const averageGrade = round1(Math.min(5, Math.max(2.7, 2.6 + (cls.academicScore / 100) * 2.2 + between(rnd, -0.4, 0.4))))
-    const previousAverageGrade = round1(Math.min(5, Math.max(2.6, averageGrade + between(rnd, -0.5, 0.35))))
-    const attendanceRate = round1(clampScore(cls.attendanceScore + between(rnd, -8, 6)))
+    const profile = i / cls.studentCount
+    const highRiskProfile = profile < 0.08
+    const mediumRiskProfile = !highRiskProfile && profile < 0.31
+    const averageGrade = highRiskProfile
+      ? round1(between(rnd, 2.4, 3.0))
+      : mediumRiskProfile
+        ? round1(between(rnd, 3.35, 3.85))
+        : round1(Math.min(5, Math.max(3.6, 3.2 + (cls.academicScore / 100) * 1.7 + between(rnd, -0.25, 0.35))))
+    const previousAverageGrade = highRiskProfile
+      ? round1(Math.min(5, averageGrade + between(rnd, 0.7, 1.2)))
+      : mediumRiskProfile
+        ? round1(Math.min(5, averageGrade + between(rnd, 0.15, 0.45)))
+        : round1(Math.min(5, Math.max(3.4, averageGrade + between(rnd, -0.15, 0.25))))
+    const attendanceRate = highRiskProfile
+      ? round1(between(rnd, 58, 72))
+      : mediumRiskProfile
+        ? round1(between(rnd, 80, 88))
+        : round1(clampScore(cls.attendanceScore + between(rnd, -4, 6)))
     const absenceCount = Math.round(((100 - attendanceRate) / 100) * 180)
-    const activityScore = round1(clampScore(cls.activityScore + between(rnd, -18, 18)))
-    const olympiadParticipation = rnd() < cls.olympiadScore / 110
+    const activityScore = highRiskProfile
+      ? round1(between(rnd, 8, 32))
+      : mediumRiskProfile
+        ? round1(between(rnd, 45, 65))
+        : round1(clampScore(cls.activityScore + between(rnd, -10, 20)))
+    const olympiadParticipation = highRiskProfile ? false : mediumRiskProfile ? rnd() < 0.2 : rnd() < cls.olympiadScore / 105
     const olympiadAwards = olympiadParticipation ? Math.round(between(rnd, 0, 3)) : 0
     const projectCount = Math.round(between(rnd, 0, 5) * (activityScore / 80))
 

@@ -1,7 +1,7 @@
 import { apiDelete, apiDownload, apiGet, apiPatch, apiPost, buildQuery } from '../api/client'
 import type {
   ApiClassInfo, ApiStudent, AppNotification, AppSettings, DashboardSummary,
-  ExamComparisonResponse, OlympiadComparisonResponse, OlympiadRatingRow, PublicUser,
+  ExamComparisonResponse, OlympiadApplication, OlympiadComparisonResponse, OlympiadRatingRow, PublicUser,
   ReportHistoryItem, ReportType, RiskPrediction, Role,
 } from '../api/types'
 
@@ -49,6 +49,11 @@ export const examsService = {
 export const olympiadsService = {
   comparison: (f: Filters) => apiGet<OlympiadComparisonResponse>(`/olympiads/comparison${q(f)}`),
   rating: (f: Filters) => apiGet<OlympiadRatingRow[]>(`/olympiads/rating${q(f)}`),
+  applications: () => apiGet<OlympiadApplication[]>('/olympiads/applications'),
+  createApplication: (data: Omit<OlympiadApplication, 'id' | 'createdBy' | 'createdAt' | 'status' | 'reviewedAt' | 'reviewedBy' | 'rejectionReason'>) =>
+    apiPost<OlympiadApplication>('/olympiads/applications', data),
+  reviewApplication: (id: string, status: 'approved' | 'rejected', rejectionReason?: string) =>
+    apiPatch<OlympiadApplication>(`/olympiads/applications/${id}`, { status, rejectionReason }),
 }
 
 // ===================== Risks =====================

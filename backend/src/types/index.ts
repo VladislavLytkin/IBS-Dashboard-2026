@@ -1,7 +1,7 @@
 import type { RiskLevel } from '../utils/riskModel'
 
-export type Role = 'ADMIN' | 'DIRECTOR' | 'HEAD_TEACHER' | 'TEACHER' | 'ANALYST'
-export const ROLES: Role[] = ['ADMIN', 'DIRECTOR', 'HEAD_TEACHER', 'TEACHER', 'ANALYST']
+export type Role = 'ADMIN' | 'DIRECTOR' | 'HEAD_TEACHER' | 'TEACHER' | 'STUDENT' | 'ANALYST'
+export const ROLES: Role[] = ['ADMIN', 'DIRECTOR', 'HEAD_TEACHER', 'TEACHER', 'STUDENT', 'ANALYST']
 
 export type TrendDirection = 'up' | 'down' | 'stable'
 
@@ -92,7 +92,7 @@ export interface RiskPrediction {
   recommendations: string[]
 }
 
-export type NotificationType = 'risk' | 'rating' | 'report' | 'attendance' | 'system'
+export type NotificationType = 'risk' | 'rating' | 'report' | 'attendance' | 'system' | 'olympiad' | 'grades'
 
 export interface AppNotification {
   id: string
@@ -101,6 +101,28 @@ export interface AppNotification {
   message: string
   createdAt: string
   read: boolean
+}
+
+export type OlympiadApplicationStatus = 'pending' | 'approved' | 'rejected'
+
+export interface OlympiadApplication {
+  id: string
+  createdBy: string
+  studentName: string
+  classId: string
+  title: string
+  level: string
+  subject: string
+  participationDate: string
+  result: string
+  placeOrDegree: string
+  confirmationUrl: string
+  studentComment: string
+  status: OlympiadApplicationStatus
+  rejectionReason?: string
+  createdAt: string
+  reviewedAt?: string
+  reviewedBy?: string
 }
 
 export interface AppSettings {

@@ -10,6 +10,7 @@ const DEMO = [
   { role: 'Завуч', email: 'headteacher@school123.local', password: 'Zavuch_2026_School!' },
   { role: 'Аналитик', email: 'analyst@school123.local', password: 'Analyst_2026_Data!' },
   { role: 'Учитель', email: 'teacher@school123.local', password: 'Teacher_2026_Class!' },
+  { role: 'Ученик', email: 'student@school123.local', password: 'Student_2026_Profile!' },
 ]
 
 export function LoginPage() {

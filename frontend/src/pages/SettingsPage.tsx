@@ -4,11 +4,13 @@ import { settingsService } from '../services'
 import { ApiError } from '../api/client'
 import { useAuth } from '../auth/AuthContext'
 import { YEARS } from '../context/FiltersContext'
+import { useTheme } from '../context/ThemeContext'
 import { GRADE_LEVELS } from '../types'
 import { Card, EmptyState, PageFooter } from '../components/ui'
 
 export function SettingsPage() {
   const { hasRole } = useAuth()
+  const { setTheme } = useTheme()
   const canEdit = hasRole('ADMIN', 'DIRECTOR')
   const [settings, setSettings] = useState<AppSettings | null>(null)
   const [status, setStatus] = useState<string | null>(null)
@@ -62,7 +64,11 @@ export function SettingsPage() {
           </Field>
           <Field label="Тема интерфейса">
             <select className="select" value={g.theme} disabled={!canEdit}
-              onChange={(e) => set({ general: { ...g, theme: e.target.value as typeof g.theme } })}>
+              onChange={(e) => {
+                const theme = e.target.value as typeof g.theme
+                set({ general: { ...g, theme } })
+                setTheme(theme === 'dark' ? 'dark' : 'light')
+              }}>
               <option value="light">Светлая</option>
               <option value="dark">Тёмная</option>
               <option value="system">Системная</option>

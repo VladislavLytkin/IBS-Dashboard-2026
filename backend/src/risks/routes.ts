@@ -7,7 +7,7 @@ export const risksRouter = Router()
 risksRouter.use(requireAuth)
 
 // Риски доступны управленческим ролям и аналитику (учителю — только просмотр своих, упрощено для прототипа).
-const canViewRisks = requireRole('ADMIN', 'DIRECTOR', 'HEAD_TEACHER', 'ANALYST', 'TEACHER')
+const canViewRisks = requireRole('ADMIN', 'DIRECTOR', 'HEAD_TEACHER', 'ANALYST', 'TEACHER', 'STUDENT')
 
 risksRouter.get('/', canViewRisks, (req, res) => {
   const { year, grade, classId } = parseFilters(req)

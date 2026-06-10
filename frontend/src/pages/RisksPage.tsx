@@ -3,8 +3,7 @@ import type { ParallelFilterValue, RiskLevel } from '../types'
 import { risksService } from '../services'
 import { useFilters } from '../context/FiltersContext'
 import { useApi } from '../hooks/useApi'
-import { RISK_WEIGHTS } from '../utils/riskModel'
-import { IconInfo, IconRisk, IconSpark } from '../components/icons'
+import { IconRisk, IconSpark } from '../components/icons'
 import { Card, EmptyState, LevelBar, PageFooter, ParallelFilter } from '../components/ui'
 
 const RISK_BADGE: Record<RiskLevel, string> = {
@@ -92,13 +91,6 @@ export function RisksPage() {
           )}
         </div>
       )}
-
-      <div className="note note--blue">
-        <IconInfo width={16} height={16} />
-        Веса модели: оценки {Math.round(RISK_WEIGHTS.gradeDrop * 100)}%, пропуски {Math.round(RISK_WEIGHTS.absence * 100)}%,
-        активность {Math.round(RISK_WEIGHTS.lowActivity * 100)}%, олимпиады {Math.round(RISK_WEIGHTS.noOlympiad * 100)}%,
-        динамика {Math.round(RISK_WEIGHTS.negativeTrend * 100)}%. Расчёт — на бэкенде (<code>utils/riskModel</code>).
-      </div>
 
       <PageFooter />
     </div>

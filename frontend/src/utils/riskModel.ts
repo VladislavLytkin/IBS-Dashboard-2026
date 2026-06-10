@@ -7,7 +7,7 @@ import { clampScore } from './scoring'
 
 /** Все факторы нормализованы в диапазон 0..100 (чем больше — тем выше риск). */
 export interface RiskFactors {
-  gradeDropFactor: number // снижение среднего балла
+  gradeDropFactor: number // снижение средней оценки
   absenceFactor: number // рост пропусков
   lowActivityFactor: number // низкая активность
   noOlympiadFactor: number // отсутствие олимпиад/проектов
@@ -23,7 +23,7 @@ export const RISK_WEIGHTS = {
 } as const
 
 export const RISK_FACTOR_LABELS: Record<keyof RiskFactors, string> = {
-  gradeDropFactor: 'Снижение среднего балла',
+  gradeDropFactor: 'Снижение средней оценки',
   absenceFactor: 'Рост пропусков',
   lowActivityFactor: 'Низкая активность',
   noOlympiadFactor: 'Отсутствие олимпиад/проектов',
@@ -42,17 +42,17 @@ export function computeRiskScore(f: RiskFactors): number {
   return Math.round(clampScore(raw))
 }
 
-/** Уровень риска: 0–33 низкий, 34–66 средний, 67–100 высокий. */
+/** riskScore — обратный показатель рейтинга: чем выше, тем хуже. */
 export function riskLevelFromScore(score: number): RiskLevel {
-  if (score <= 33) return 'низкий'
-  if (score <= 66) return 'средний'
+  if (score <= 50) return 'низкий'
+  if (score <= 75) return 'средний'
   return 'высокий'
 }
 
 /** Человекочитаемые причины риска по факторам выше порога. */
 export function riskReasons(f: RiskFactors): string[] {
   const reasons: string[] = []
-  if (f.gradeDropFactor >= 45) reasons.push('Снижение среднего балла за последние недели')
+  if (f.gradeDropFactor >= 45) reasons.push('Снижение средней оценки за последние недели')
   if (f.absenceFactor >= 45) reasons.push('Повышенное количество пропусков')
   if (f.lowActivityFactor >= 55) reasons.push('Низкая внеучебная активность')
   if (f.noOlympiadFactor >= 60) reasons.push('Нет участия в олимпиадах и проектах')

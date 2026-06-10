@@ -20,6 +20,7 @@ const MARK_CLASS: Record<AttendanceMark, string> = {
 
 export function AttendancePage() {
   const [className, setClassName] = useState('7Б')
+  const [absenceTab, setAbsenceTab] = useState<'excused' | 'truancy'>('excused')
   const students = getStudents(className)
   const [studentId, setStudentId] = useState(students[0]?.id ?? '')
 
@@ -123,15 +124,18 @@ export function AttendancePage() {
 
         <Card title="Детализация пропусков">
           <div className="detail-tabs">
-            <span className="detail-tab is-orange">Отсутствия (уваж.)</span>
-            <span className="detail-tab">Прогулы (Н)</span>
+            <button className={`detail-tab${absenceTab === 'excused' ? ' is-orange' : ''}`} onClick={() => setAbsenceTab('excused')}>
+              Отсутствия (уваж.)
+            </button>
+            <button className={`detail-tab${absenceTab === 'truancy' ? ' is-red' : ''}`} onClick={() => setAbsenceTab('truancy')}>
+              Прогулы (Н)
+            </button>
           </div>
-          <DetailTable rows={ABSENCE_EXCUSED} lastLabel="Причина" />
-
-          <div className="detail-tabs" style={{ marginTop: 22 }}>
-            <span className="detail-tab is-red">Прогулы (Н)</span>
-          </div>
-          <DetailTable rows={ABSENCE_TRUANCY} lastLabel="Комментарий" />
+          {absenceTab === 'excused' ? (
+            <DetailTable rows={ABSENCE_EXCUSED} lastLabel="Причина" emptyMessage="Уважительных отсутствий за период нет" />
+          ) : (
+            <DetailTable rows={ABSENCE_TRUANCY} lastLabel="Комментарий" emptyMessage="Прогулов за период нет" />
+          )}
 
           <p className="text-muted" style={{ marginTop: 14, fontSize: 13 }}>
             Примечание: Н – прогул без уважительной причины.
@@ -144,7 +148,8 @@ export function AttendancePage() {
   )
 }
 
-function DetailTable({ rows, lastLabel }: { rows: AbsenceDetail[]; lastLabel: string }) {
+function DetailTable({ rows, lastLabel, emptyMessage }: { rows: AbsenceDetail[]; lastLabel: string; emptyMessage: string }) {
+  if (!rows.length) return <div className="empty empty--compact"><p>{emptyMessage}</p></div>
   return (
     <div className="table-wrap">
       <table className="tbl tbl--compact">
