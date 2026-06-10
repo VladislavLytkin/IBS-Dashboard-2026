@@ -1,88 +1,91 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import {
   CartesianGrid, Cell, Line, LineChart, Pie, PieChart, ResponsiveContainer,
   Tooltip, XAxis, YAxis, LabelList,
 } from 'recharts'
-import {
-  RATING_DISTRIBUTION, RATING_SCHOOL_DYNAMICS, RATING_WEIGHTS, STUDENT_RATING,
-} from '../data/studentRating'
-import { ALL_CLASSES } from '../data/classes'
-import { IconDownload, IconInfo } from '../components/icons'
-import { Card, Medal, PageFooter, scoreClass } from '../components/ui'
+import type { ParallelFilterValue, RatingDistribution } from '../types'
+import { getStudentRanking } from '../data/students'
+import { RATING_SCHOOL_DYNAMICS } from '../data/studentRating'
+import { FINAL_SCORE_COMPONENTS } from '../utils/scoring'
+import { IconDownload } from '../components/icons'
+import { Card, EmptyState, Medal, PageFooter, ParallelFilter, scoreClass } from '../components/ui'
 
 const fmt = (n: number) => n.toFixed(1).replace('.', ',')
 
-export function StudentRatingPage() {
-  const [klass, setKlass] = useState('Все классы')
-  const [period, setPeriod] = useState('2023/2024 учебный год')
+function buildDistribution(scores: number[]): RatingDistribution[] {
+  const buckets = [
+    { label: 'Высокий', range: '80–100', color: '#16a34a', test: (s: number) => s >= 80 },
+    { label: 'Хороший', range: '60–79', color: '#2563eb', test: (s: number) => s >= 60 && s < 80 },
+    { label: 'Средний', range: '40–59', color: '#f59e0b', test: (s: number) => s >= 40 && s < 60 },
+    { label: 'Низкий', range: '0–39', color: '#dc2626', test: (s: number) => s < 40 },
+  ]
+  const total = scores.length || 1
+  return buckets.map((b) => {
+    const count = scores.filter(b.test).length
+    return { label: b.label, range: b.range, color: b.color, count, percent: Math.round((count / total) * 100) }
+  })
+}
 
-  const rows = STUDENT_RATING.filter((r) => klass === 'Все классы' || r.className === klass)
+export function StudentRatingPage() {
+  const [parallel, setParallel] = useState<ParallelFilterValue>('all')
+  const ranking = useMemo(() => getStudentRanking(parallel), [parallel])
+  const distribution = useMemo(() => buildDistribution(ranking.map((r) => r.finalScore)), [ranking])
+
+  const topRows = ranking.slice(0, 12)
 
   return (
     <div className="page">
       <div className="info-banner">
-        <IconInfo width={18} height={18} />
-        <span>Итоговый рейтинг рассчитывается автоматически на основе следующих компонентов:</span>
-        {RATING_WEIGHTS.map((w) => (
-          <span key={w.label} className="weight-pill" style={{ color: w.color }}>
-            {w.label} — {w.weight}%
+        <span>Итоговый рейтинг рассчитывается автоматически по единой формуле (см. <code>src/utils/scoring.ts</code>):</span>
+        {FINAL_SCORE_COMPONENTS.map((c) => (
+          <span key={c.key} className="weight-pill" style={{ color: c.color }}>
+            {c.label} — {Math.round(c.weight * 100)}%
           </span>
         ))}
       </div>
 
       <div className="toolbar">
-        <div className="field">
-          <span className="field__label">Класс:</span>
-          <select className="select" value={klass} onChange={(e) => setKlass(e.target.value)}>
-            <option>Все классы</option>
-            {ALL_CLASSES.map((c) => <option key={c} value={c}>{c}</option>)}
-          </select>
-        </div>
-        <div className="field">
-          <span className="field__label">Период:</span>
-          <select className="select" value={period} onChange={(e) => setPeriod(e.target.value)} style={{ minWidth: 200 }}>
-            <option>2023/2024 учебный год</option>
-            <option>1 триместр 2023/24</option>
-            <option>2 триместр 2023/24</option>
-          </select>
-        </div>
+        <ParallelFilter value={parallel} onChange={setParallel} />
         <button className="btn btn--ghost-blue toolbar__spacer"><IconDownload /> Экспорт в Excel</button>
       </div>
 
       <Card title="Рейтинг учеников">
-        <div className="table-wrap">
-          <table className="tbl tbl--compact">
-            <thead>
-              <tr>
-                <th rowSpan={2} className="td-num">Место</th>
-                <th rowSpan={2}>ФИО</th>
-                <th rowSpan={2}>Класс</th>
-                <th rowSpan={2} className="td-num">Итоговый балл<br /><span className="text-muted" style={{ fontWeight: 400 }}>(из 100)</span></th>
-                <th colSpan={4} className="td-num">Детализация по компонентам</th>
-              </tr>
-              <tr>
-                <th className="td-num" style={{ color: 'var(--blue)' }}>Средний балл оценок<br /><span style={{ fontWeight: 400 }}>(40%)</span></th>
-                <th className="td-num" style={{ color: 'var(--green)' }}>Олимпиады<br /><span style={{ fontWeight: 400 }}>(30%)</span></th>
-                <th className="td-num" style={{ color: 'var(--orange)' }}>СПД (часы)<br /><span style={{ fontWeight: 400 }}>(10%)</span></th>
-                <th className="td-num" style={{ color: 'var(--purple)' }}>Посещаемость<br /><span style={{ fontWeight: 400 }}>(20%)</span></th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((r) => (
-                <tr key={r.fullName}>
-                  <td className="td-num"><Medal place={r.place} /></td>
-                  <td className="td-strong">{r.fullName}</td>
-                  <td>{r.className}</td>
-                  <td className={'td-num ' + scoreClass(r.total)}>{fmt(r.total)}</td>
-                  <td className="td-num" style={{ color: 'var(--blue)' }}>{fmt(r.grades)} / 40</td>
-                  <td className="td-num" style={{ color: 'var(--green)' }}>{fmt(r.olympiads)} / 30</td>
-                  <td className="td-num" style={{ color: 'var(--orange)' }}>{fmt(r.volunteering)} / 10</td>
-                  <td className="td-num" style={{ color: 'var(--purple)' }}>{fmt(r.attendance)} / 20</td>
+        {topRows.length === 0 ? (
+          <EmptyState message="Для выбранной параллели нет данных." />
+        ) : (
+          <div className="table-wrap">
+            <table className="tbl tbl--compact">
+              <thead>
+                <tr>
+                  <th className="td-num">Место</th>
+                  <th>ФИО</th>
+                  <th>Класс</th>
+                  <th className="td-num">Итоговый балл</th>
+                  <th className="td-num" style={{ color: 'var(--blue)' }}>Академ. (35%)</th>
+                  <th className="td-num" style={{ color: 'var(--green)' }}>Олимп. (25%)</th>
+                  <th className="td-num" style={{ color: 'var(--purple)' }}>Посещ. (15%)</th>
+                  <th className="td-num" style={{ color: 'var(--orange)' }}>Активн. (15%)</th>
+                  <th className="td-num" style={{ color: 'var(--red)' }}>Риск (10%)</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {topRows.map((r) => (
+                  <tr key={r.student.id}>
+                    <td className="td-num"><Medal place={r.place} /></td>
+                    <td className="td-strong">{r.student.fullName}</td>
+                    <td>{r.student.classId}</td>
+                    <td className={'td-num ' + scoreClass(r.finalScore)}>{fmt(r.finalScore)}</td>
+                    <td className="td-num" style={{ color: 'var(--blue)' }}>{fmt(r.academic)}</td>
+                    <td className="td-num" style={{ color: 'var(--green)' }}>{fmt(r.olympiad)}</td>
+                    <td className="td-num" style={{ color: 'var(--purple)' }}>{fmt(r.attendance)}</td>
+                    <td className="td-num" style={{ color: 'var(--orange)' }}>{fmt(r.activity)}</td>
+                    <td className="td-num" style={{ color: 'var(--red)' }}>{r.student.riskScore}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </Card>
 
       <div className="grid grid-2">
@@ -91,16 +94,15 @@ export function StudentRatingPage() {
             <div style={{ width: 180, height: 180 }}>
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
-                  <Pie data={RATING_DISTRIBUTION} dataKey="percent" nameKey="label"
-                    innerRadius={50} outerRadius={80} paddingAngle={2}>
-                    {RATING_DISTRIBUTION.map((d) => <Cell key={d.label} fill={d.color} />)}
+                  <Pie data={distribution} dataKey="percent" nameKey="label" innerRadius={50} outerRadius={80} paddingAngle={2}>
+                    {distribution.map((d) => <Cell key={d.label} fill={d.color} />)}
                   </Pie>
                   <Tooltip formatter={(v: number) => `${v}%`} />
                 </PieChart>
               </ResponsiveContainer>
             </div>
             <ul style={{ display: 'flex', flexDirection: 'column', gap: 12, flex: 1, minWidth: 220 }}>
-              {RATING_DISTRIBUTION.map((d) => (
+              {distribution.map((d) => (
                 <li key={d.label} className="flex-between">
                   <span className="legend-item">
                     <span className="legend-dot" style={{ background: d.color }} />

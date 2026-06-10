@@ -1,88 +1,77 @@
-import type { ClassRating, RiskLevel, Trend } from '../types'
+import type { ClassActivity } from './activity'
+import type { ClassInfo, GradeLevel, ParallelFilterValue, TrendDirection } from '../types'
+import { GRADE_LEVELS } from '../types'
+import { between, round1, rngFor } from '../utils/random'
+import { clampScore, computeFinalScore, sortByFinalScore } from '../utils/scoring'
+import { activityScoreFor, classActivityFor } from './activity'
 
-// Параллели, доступные в дашборде (как на дизайне — 5–11 класс).
-export const GRADES = [5, 6, 7, 8, 9, 10, 11] as const
+export const GRADES = GRADE_LEVELS
 
-function risk(score: number): RiskLevel {
-  if (score >= 75) return 'низкий'
-  if (score >= 65) return 'средний'
-  return 'высокий'
+const LETTERS = ['А', 'Б', 'В'] as const
+
+// «Сила» буквы класса: А — обычно сильнее, В — слабее. Это создаёт логичный разброс.
+const LETTER_BOOST: Record<string, number> = { А: 8, Б: 0, В: -8 }
+
+function trendFromDelta(delta: number): TrendDirection {
+  if (delta > 0.6) return 'up'
+  if (delta < -0.6) return 'down'
+  return 'stable'
 }
 
-// Сырые баллы по классам каждой параллели (синтетика в духе датасета аналитики).
-// Для 7 класса значения совпадают с дизайном.
-const RAW: Record<number, { letter: string; score: number; trend: Trend; students: number }[]> = {
-  5: [
-    { letter: 'А', score: 84.2, trend: 'up', students: 26 },
-    { letter: 'Б', score: 80.5, trend: 'flat', students: 25 },
-    { letter: 'В', score: 77.1, trend: 'up', students: 28 },
-    { letter: 'Г', score: 71.9, trend: 'down', students: 24 },
-    { letter: 'Д', score: 66.3, trend: 'flat', students: 27 },
-  ],
-  6: [
-    { letter: 'А', score: 83.0, trend: 'up', students: 27 },
-    { letter: 'Б', score: 81.4, trend: 'up', students: 26 },
-    { letter: 'В', score: 75.6, trend: 'down', students: 25 },
-    { letter: 'Г', score: 72.0, trend: 'flat', students: 28 },
-    { letter: 'Д', score: 68.7, trend: 'down', students: 24 },
-    { letter: 'Е', score: 63.1, trend: 'down', students: 26 },
-  ],
-  7: [
-    { letter: 'Б', score: 85.6, trend: 'up', students: 27 },
-    { letter: 'А', score: 82.1, trend: 'up', students: 26 },
-    { letter: 'В', score: 78.3, trend: 'flat', students: 28 },
-    { letter: 'Г', score: 73.2, trend: 'down', students: 25 },
-    { letter: 'Д', score: 69.4, trend: 'flat', students: 27 },
-    { letter: 'Е', score: 64.8, trend: 'down', students: 24 },
-  ],
-  8: [
-    { letter: 'А', score: 86.1, trend: 'up', students: 28 },
-    { letter: 'Б', score: 79.9, trend: 'flat', students: 27 },
-    { letter: 'В', score: 74.3, trend: 'up', students: 26 },
-    { letter: 'Г', score: 70.5, trend: 'down', students: 25 },
-    { letter: 'Д', score: 62.4, trend: 'down', students: 24 },
-  ],
-  9: [
-    { letter: 'Б', score: 88.0, trend: 'up', students: 26 },
-    { letter: 'А', score: 84.6, trend: 'up', students: 27 },
-    { letter: 'В', score: 80.2, trend: 'flat', students: 25 },
-    { letter: 'Г', score: 72.8, trend: 'down', students: 28 },
-    { letter: 'Д', score: 67.1, trend: 'flat', students: 24 },
-  ],
-  10: [
-    { letter: 'А', score: 85.3, trend: 'up', students: 24 },
-    { letter: 'Б', score: 78.6, trend: 'flat', students: 23 },
-    { letter: 'В', score: 71.2, trend: 'down', students: 25 },
-  ],
-  11: [
-    { letter: 'А', score: 87.4, trend: 'up', students: 23 },
-    { letter: 'Б', score: 81.0, trend: 'up', students: 24 },
-    { letter: 'В', score: 73.5, trend: 'down', students: 22 },
-  ],
+function buildClass(grade: GradeLevel, letter: string): ClassInfo {
+  const name = `${grade}${letter}`
+  const rnd = rngFor(`class:${name}`)
+  const boost = LETTER_BOOST[letter] ?? 0
+
+  // Академический результат — база, остальные показатели коррелируют с ним.
+  const academicScore = round1(clampScore(72 + boost + between(rnd, -6, 6) + (grade - 8) * 0.6))
+
+  // Сильные классы чаще выше по олимпиадам.
+  const olympiadScore = round1(clampScore(0.7 * academicScore + boost * 0.6 + between(rnd, -10, 8) - 8))
+
+  // Посещаемость: у части классов заметно ниже — это повышает риск.
+  const attendanceScore = round1(clampScore(90 + boost * 0.5 + between(rnd, -10, 6)))
+
+  const activityScore = activityScoreFor(name, academicScore)
+
+  // Риск тем выше, чем ниже посещаемость и академический результат.
+  const riskScore = Math.round(
+    clampScore(58 - (attendanceScore - 86) * 1.6 - (academicScore - 72) * 0.9 + between(rnd, -8, 10)),
+  )
+
+  const finalScore = computeFinalScore({ academicScore, olympiadScore, attendanceScore, activityScore, riskScore })
+  const weeklyDelta = round1(between(rnd, -2.6, 2.8))
+
+  return {
+    id: name,
+    name,
+    grade,
+    studentCount: Math.round(between(rnd, 22, 31)),
+    academicScore,
+    olympiadScore,
+    attendanceScore,
+    activityScore,
+    riskScore,
+    finalScore,
+    weeklyDelta,
+    trend: trendFromDelta(weeklyDelta),
+  }
 }
 
-export const CLASS_RATINGS: Record<number, ClassRating[]> = Object.fromEntries(
-  GRADES.map((grade) => {
-    const rows = [...RAW[grade]]
-      .sort((a, b) => b.score - a.score)
-      .map((r, i) => ({
-        place: i + 1,
-        className: `${grade}${r.letter}`,
-        grade,
-        score: r.score,
-        trend: r.trend,
-        studentsCount: r.students,
-        riskLevel: risk(r.score),
-      }))
-    return [grade, rows]
-  }),
-) as Record<number, ClassRating[]>
-
-export function getClassRatings(grade: number): ClassRating[] {
-  return CLASS_RATINGS[grade] ?? []
-}
-
-// Полный список классов (для выпадающих списков «Выберите класс»).
-export const ALL_CLASSES: string[] = GRADES.flatMap((g) =>
-  [...RAW[g]].sort((a, b) => a.letter.localeCompare(b.letter)).map((r) => `${g}${r.letter}`),
+export const CLASSES: ClassInfo[] = GRADES.flatMap((grade) =>
+  LETTERS.map((letter) => buildClass(grade, letter)),
 )
+
+export const ALL_CLASSES: string[] = CLASSES.map((c) => c.name)
+
+/** Классы выбранной параллели (или все), отсортированные по итоговому баллу по убыванию. */
+export function getClasses(parallel: ParallelFilterValue): ClassInfo[] {
+  const filtered = parallel === 'all' ? CLASSES : CLASSES.filter((c) => c.grade === parallel)
+  return sortByFinalScore(filtered)
+}
+
+export function getClassById(id: string): ClassInfo | undefined {
+  return CLASSES.find((c) => c.id === id)
+}
+
+export const CLASS_ACTIVITY: ClassActivity[] = CLASSES.map((c) => classActivityFor(c.name, c.activityScore))

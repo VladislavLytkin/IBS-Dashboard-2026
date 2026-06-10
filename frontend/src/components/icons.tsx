@@ -74,3 +74,9 @@ export const IconSchool = (p: P) => (
 export const IconTrendUp = (p: P) => (
   <svg {...base(p)}><path d="m4 18 6-6 4 4 6-7" /><path d="M16 9h5v5" /></svg>
 )
+export const IconRisk = (p: P) => (
+  <svg {...base(p)}><path d="M12 3 4 6v5c0 5 3.4 8 8 10 4.6-2 8-5 8-10V6l-8-3Z" /><path d="M12 9v4M12 16h.01" /></svg>
+)
+export const IconSpark = (p: P) => (
+  <svg {...base(p)}><path d="M12 3v4M12 17v4M3 12h4M17 12h4" /><path d="m6 6 2.5 2.5M15.5 15.5 18 18M18 6l-2.5 2.5M8.5 15.5 6 18" /></svg>
+)

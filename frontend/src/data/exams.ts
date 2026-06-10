@@ -1,7 +1,6 @@
 import type {
   ExamBelowThreshold,
   ExamComparePoint,
-  ExamCriterion,
   ExamDynamicPoint,
 } from '../types'
 
@@ -21,14 +20,6 @@ export const EXAM_STATS = {
   yoyDelta: 4.2,
 }
 
-export const EXAM_CRITERIA: ExamCriterion[] = [
-  { name: 'Алгебра и начала анализа', school: 74, city: 68, region: 64 },
-  { name: 'Геометрия', school: 69, city: 62, region: 58 },
-  { name: 'Реальная математика', school: 76, city: 71, region: 66 },
-  { name: 'Вероятность и статистика', school: 71, city: 63, region: 60 },
-  { name: 'Общий результат', school: 72.6, city: 66.8, region: 63.7 },
-]
-
 export const EXAM_BELOW_THRESHOLD: ExamBelowThreshold[] = [
   { fullName: 'Кузнецов Артём', className: '9Б', primaryScore: 5, testScore: 5 },
   { fullName: 'Смирнова Елизавета', className: '9А', primaryScore: 6, testScore: 6 },
@@ -46,7 +37,6 @@ export const EXAM_DYNAMICS: ExamDynamicPoint[] = [
   { label: 'Резервный период', current: 69.1, previous: 69.1 },
 ]
 
-export const EXAM_TYPES = ['ОГЭ', 'ЕГЭ']
-export const EXAM_SUBJECTS = ['Математика', 'Русский язык', 'Физика', 'Информатика', 'Химия', 'Биология']
-export const EXAM_GRADE_GROUPS = ['9 классы', '11 классы']
+export const EXAM_TYPES = ['ЕГЭ', 'ОГЭ']
+export const EXAM_GRADE_GROUPS = ['11 классы', '9 классы']
 export const EXAM_PERIODS = ['Основной период 2024', 'Резервный период 2024', 'Основной период 2023']

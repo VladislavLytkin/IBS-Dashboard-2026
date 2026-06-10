@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
-import type { Trend } from '../types'
+import type { GradeLevel, ParallelFilterValue, TrendDirection } from '../types'
+import { GRADE_LEVELS } from '../types'
 import { IconCalendar, IconChevronLeft, IconChevronRight, IconRefresh } from './icons'
 
 /** Селект «Месяц» с иконкой календаря слева (как на дизайне). */
@@ -29,10 +30,71 @@ export function scoreClass(score: number): string {
   return 'score-red'
 }
 
-export function TrendArrow({ trend }: { trend: Trend }) {
-  if (trend === 'up') return <span className="trend trend--up" title="Рост">↑</span>
-  if (trend === 'down') return <span className="trend trend--down" title="Снижение">↓</span>
-  return <span className="trend trend--flat" title="Без изменений">—</span>
+export function TrendArrow({ trend, delta }: { trend: TrendDirection; delta?: number }) {
+  const text = delta != null ? ` ${delta > 0 ? '+' : ''}${delta.toFixed(1)}` : ''
+  if (trend === 'up') return <span className="trend trend--up" title="Рост">↑{text}</span>
+  if (trend === 'down') return <span className="trend trend--down" title="Снижение">↓{text}</span>
+  return <span className="trend trend--flat" title="Без изменений">—{text}</span>
+}
+
+// ===================== Фильтр по параллели =====================
+export type LevelKind = 'high' | 'mid' | 'low'
+
+/** Уровень результата по проценту: высокий / средний / низкий. */
+export function levelOf(percent: number): LevelKind {
+  if (percent >= 70) return 'high'
+  if (percent >= 50) return 'mid'
+  return 'low'
+}
+
+const LEVEL_COLOR: Record<LevelKind, string> = {
+  high: 'var(--green)',
+  mid: 'var(--orange)',
+  low: 'var(--red)',
+}
+
+/** Мини-прогрессбар, ширина и цвет которого соответствуют значению. */
+export function LevelBar({ value, suffix = '%' }: { value: number; suffix?: string }) {
+  const color = LEVEL_COLOR[levelOf(value)]
+  return (
+    <div className="mini">
+      <span className="mini__val" style={{ color }}>{value}{suffix}</span>
+      <span className="mini__track">
+        <span className="mini__fill" style={{ width: `${Math.min(100, value)}%`, background: color }} />
+      </span>
+    </div>
+  )
+}
+
+/** Сегментированный фильтр по параллелям: Все, 5–11. Активная параллель выделена. */
+export function ParallelFilter({
+  value,
+  onChange,
+  includeAll = true,
+}: {
+  value: ParallelFilterValue
+  onChange: (v: ParallelFilterValue) => void
+  includeAll?: boolean
+}) {
+  const options: { v: ParallelFilterValue; label: string }[] = [
+    ...(includeAll ? [{ v: 'all' as ParallelFilterValue, label: 'Все' }] : []),
+    ...GRADE_LEVELS.map((g: GradeLevel) => ({ v: g as ParallelFilterValue, label: String(g) })),
+  ]
+  return (
+    <div className="pfilter" role="tablist" aria-label="Параллель">
+      <span className="field__label">Параллель:</span>
+      {options.map((o) => (
+        <button
+          key={String(o.v)}
+          className={`pfilter__btn${value === o.v ? ' is-active' : ''}`}
+          onClick={() => onChange(o.v)}
+          aria-pressed={value === o.v}
+        >
+          {o.label}
+        </button>
+      ))}
+    </div>
+  )
 }
 
 export function Medal({ place }: { place: number }) {
@@ -82,6 +144,51 @@ export function Pagination({ total, perPage = 12 }: { total: number; perPage?: n
       {pages > 4 && <span className="pager__dots">…</span>}
       {pages > 3 && <button>{pages}</button>}
       <button aria-label="Вперёд"><IconChevronRight width={16} height={16} /></button>
+    </div>
+  )
+}
+
+export interface ComparisonRow {
+  subject: string
+  school: number
+  city: number
+  region: number
+}
+
+/** Таблица сравнения «Школа / Город / Регион» с мини-прогрессбарами по уровню.
+ *  На узких экранах превращается в карточки (см. .tbl--cards в CSS). */
+export function ComparisonTable({
+  subjectHeader,
+  rows,
+  emptyMessage = 'Нет данных для отображения',
+}: {
+  subjectHeader: string
+  rows: ComparisonRow[]
+  emptyMessage?: string
+}) {
+  if (!rows.length) return <EmptyState message={emptyMessage} />
+  return (
+    <div className="table-wrap">
+      <table className="tbl tbl--compact tbl--cards cmp">
+        <thead>
+          <tr>
+            <th>{subjectHeader}</th>
+            <th>Школа №123</th>
+            <th>Город</th>
+            <th>Регион</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r) => (
+            <tr key={r.subject}>
+              <td className="td-strong cmp__subject" data-label={subjectHeader}>{r.subject}</td>
+              <td data-label="Школа №123"><LevelBar value={r.school} /></td>
+              <td data-label="Город"><LevelBar value={r.city} /></td>
+              <td data-label="Регион"><LevelBar value={r.region} /></td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   )
 }

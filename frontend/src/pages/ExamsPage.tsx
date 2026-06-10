@@ -4,29 +4,37 @@ import {
   Tooltip, XAxis, YAxis, LabelList,
 } from 'recharts'
 import {
-  EXAM_BELOW_THRESHOLD, EXAM_BELOW_THRESHOLD_TOTAL, EXAM_COMPARE, EXAM_CRITERIA,
-  EXAM_DYNAMICS, EXAM_GRADE_GROUPS, EXAM_PERIODS, EXAM_STATS, EXAM_SUBJECTS, EXAM_TYPES,
+  EXAM_BELOW_THRESHOLD, EXAM_BELOW_THRESHOLD_TOTAL, EXAM_COMPARE,
+  EXAM_DYNAMICS, EXAM_GRADE_GROUPS, EXAM_PERIODS, EXAM_STATS, EXAM_TYPES,
 } from '../data/exams'
+import { EXAM_KEY_SUBJECTS, EXAM_SUBJECTS, EXAM_SUBJECT_RESULTS } from '../data/examResults'
 import { IconInfo, IconReset, IconTrendUp } from '../components/icons'
-import { Card, PageFooter } from '../components/ui'
+import { Card, ComparisonTable, PageFooter } from '../components/ui'
 
 const fmt = (n: number) => n.toFixed(1).replace('.', ',')
 
 export function ExamsPage() {
-  const [type, setType] = useState('ОГЭ')
-  const [subject, setSubject] = useState('Математика')
-  const [grade, setGrade] = useState('9 классы')
+  const [type, setType] = useState('ЕГЭ')
+  const [subject, setSubject] = useState<string>('Все предметы')
+  const [grade, setGrade] = useState('11 классы')
   const [period, setPeriod] = useState('Основной период 2024')
+  const [subjectScope, setSubjectScope] = useState<'key' | 'all'>('key')
 
   const reset = () => {
-    setType('ОГЭ'); setSubject('Математика'); setGrade('9 классы'); setPeriod('Основной период 2024')
+    setType('ЕГЭ'); setSubject('Все предметы'); setGrade('11 классы'); setPeriod('Основной период 2024')
   }
+
+  const compareRows = (
+    subjectScope === 'key'
+      ? EXAM_SUBJECT_RESULTS.filter((r) => EXAM_KEY_SUBJECTS.includes(r.subject))
+      : EXAM_SUBJECT_RESULTS
+  ).filter((r) => subject === 'Все предметы' || r.subject === subject)
 
   return (
     <div className="page">
       <div className="toolbar">
         <FilterField label="Тип экзамена:" value={type} onChange={setType} options={EXAM_TYPES} />
-        <FilterField label="Предмет:" value={subject} onChange={setSubject} options={EXAM_SUBJECTS} />
+        <FilterField label="Предмет:" value={subject} onChange={setSubject} options={['Все предметы', ...EXAM_SUBJECTS]} />
         <FilterField label="Класс:" value={grade} onChange={setGrade} options={EXAM_GRADE_GROUPS} />
         <FilterField label="Период:" value={period} onChange={setPeriod} options={EXAM_PERIODS} />
         <button className="btn toolbar__spacer" onClick={reset}><IconReset /> Сбросить фильтры</button>
@@ -78,26 +86,19 @@ export function ExamsPage() {
       </div>
 
       <div className="grid grid-2-wide">
-        <Card title="Результаты по критериям (в % от максимального балла)">
-          <div className="table-wrap">
-            <table className="tbl tbl--compact">
-              <thead>
-                <tr><th>Критерий</th><th>Школа №123</th><th>Город</th><th>Регион</th></tr>
-              </thead>
-              <tbody>
-                {EXAM_CRITERIA.map((c) => (
-                  <tr key={c.name}>
-                    <td className="td-strong">{c.name}</td>
-                    <td><MiniBar value={c.school} color="var(--blue)" /></td>
-                    <td><MiniBar value={c.city} color="var(--green)" /></td>
-                    <td><MiniBar value={c.region} color="var(--orange)" /></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+        <Card
+          title="Результаты по предметам ЕГЭ (в % от максимального балла)"
+          headerRight={
+            <div className="segment">
+              <button className={subjectScope === 'key' ? 'is-active' : ''} onClick={() => setSubjectScope('key')}>Ключевые</button>
+              <button className={subjectScope === 'all' ? 'is-active' : ''} onClick={() => setSubjectScope('all')}>Все предметы</button>
+            </div>
+          }
+        >
+          <ComparisonTable subjectHeader="Предмет" rows={compareRows} emptyMessage="Нет данных по выбранному предмету." />
           <div className="note" style={{ marginTop: 14 }}>
-            <IconInfo width={16} height={16} /> Данные представлены в % от максимального первичного балла.
+            <IconInfo width={16} height={16} />
+            Данные представлены в % от максимального первичного или тестового балла. Используются синтетические данные для прототипа.
           </div>
         </Card>
 
@@ -174,15 +175,6 @@ function StatBox({ label, value, sub, color }: {
       <div className="stat-box__label">{label}</div>
       <div className={`stat-box__value stat-box__value--${color}`}>{value}</div>
       <div className="stat-box__sub">{sub}</div>
-    </div>
-  )
-}
-
-function MiniBar({ value, color }: { value: number; color: string }) {
-  return (
-    <div className="mini">
-      <span className="mini__val">{value}%</span>
-      <span className="mini__track"><span className="mini__fill" style={{ width: `${value}%`, background: color }} /></span>
     </div>
   )
 }

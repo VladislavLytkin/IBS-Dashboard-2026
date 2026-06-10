@@ -1,7 +1,7 @@
 import { NavLink } from 'react-router-dom'
 import {
   IconChart, IconClock, IconExam, IconGlobe, IconGrades, IconHome,
-  IconOlympiad, IconReport, IconSchool, IconSettings,
+  IconOlympiad, IconReport, IconRisk, IconSchool, IconSettings,
 } from './icons'
 import type { ComponentType, SVGProps } from 'react'
 
@@ -18,6 +18,7 @@ const MAIN_NAV: NavItem[] = [
   { to: '/volunteering', label: 'СПД (волонтёрство)', Icon: IconGlobe },
   { to: '/attendance', label: 'Посещаемость', Icon: IconClock },
   { to: '/exams', label: 'Экзамены', Icon: IconExam },
+  { to: '/risks', label: 'Риски', Icon: IconRisk },
   { to: '/student-rating', label: 'Итоговый рейтинг учеников', Icon: IconChart },
 ]
 

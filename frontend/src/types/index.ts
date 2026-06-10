@@ -1,39 +1,90 @@
 // Shared domain types for the IBS school dashboard.
 // Mock data in src/data is typed against these so it can later be swapped for an API.
 
-export type Trend = 'up' | 'down' | 'flat'
+// ===================== Базовые =====================
+export type GradeLevel = 5 | 6 | 7 | 8 | 9 | 10 | 11
+export const GRADE_LEVELS: GradeLevel[] = [5, 6, 7, 8, 9, 10, 11]
+
+/** Значение фильтра по параллели: конкретная параллель или «Все». */
+export type ParallelFilterValue = GradeLevel | 'all'
+
+export type TrendDirection = 'up' | 'down' | 'stable'
 
 export type RiskLevel = 'низкий' | 'средний' | 'высокий'
 
-/** One class row in the parallel rating table (Главный экран). */
-export interface ClassRating {
-  place: number
-  className: string
-  grade: number // параллель 5–11
-  score: number // итоговый балл из 100
-  trend: Trend
-  studentsCount: number
-  riskLevel: RiskLevel
+// ===================== Классы и ученики =====================
+export interface ClassInfo {
+  id: string // совпадает с name, напр. "7Б"
+  name: string
+  grade: GradeLevel
+  studentCount: number
+  academicScore: number // 0..100
+  olympiadScore: number // 0..100
+  attendanceScore: number // 0..100
+  activityScore: number // 0..100
+  riskScore: number // 0..100 (выше — хуже)
+  finalScore: number // 0..100 (рассчитан в utils/scoring)
+  weeklyDelta: number // изменение балла за неделю
+  trend: TrendDirection
 }
 
-/** A student belonging to a class. */
 export interface Student {
   id: string
   fullName: string
-  className: string
+  classId: string
+  grade: GradeLevel
+  averageGrade: number // средний балл (по 5-балльной шкале)
+  attendanceRate: number // % присутствия
+  olympiadParticipation: boolean
+  olympiadAwards: number // число призовых мест/дипломов
+  activityScore: number // 0..100
+  riskScore: number // 0..100
+  riskLevel: RiskLevel
+  riskReasons: string[]
 }
 
-/** Per-subject average for the grades bar chart. */
-export interface SubjectAverage {
-  subject: string
-  average: number // по 10-балльной шкале (как на дизайне)
+// ===================== Экзамены (ЕГЭ/ОГЭ) =====================
+export type ExamSubject =
+  | 'Русский язык'
+  | 'Математика профильная'
+  | 'Математика базовая'
+  | 'Информатика'
+  | 'Физика'
+  | 'Химия'
+  | 'Биология'
+  | 'Обществознание'
+  | 'История'
+  | 'География'
+  | 'Литература'
+  | 'Английский язык'
+
+export interface ExamComparisonResult {
+  subject: ExamSubject
+  school: number // % от максимального балла
+  city: number
+  region: number
 }
 
-/** One subject row in the term grades table (по неделям). */
-export interface SubjectGradeRow {
-  subject: string
-  weeks: (number | null)[] // null = нет оценки (—)
-  final: number
+// ===================== Олимпиады =====================
+export type OlympiadSubject =
+  | 'Математика'
+  | 'Информатика'
+  | 'Физика'
+  | 'Химия'
+  | 'Биология'
+  | 'Обществознание'
+  | 'История'
+  | 'География'
+  | 'Литература'
+  | 'Английский язык'
+  | 'Экономика'
+  | 'Право'
+
+export interface OlympiadComparisonResult {
+  subject: OlympiadSubject
+  school: number // олимпиадный индекс, %
+  city: number
+  region: number
 }
 
 export type OlympiadLevel = 'Школьная' | 'Городская' | 'Всероссийская'
@@ -50,14 +101,53 @@ export interface OlympiadRecord {
   date: string
 }
 
-/** Волонтёрское мероприятие. */
+/** Олимпиадный индекс класса (для рейтинга по параллели). */
+export interface ClassOlympiadIndex {
+  classId: string
+  grade: GradeLevel
+  participationPct: number // доля участников от параллели
+  awardPct: number // доля призёров/победителей
+  avgScore: number // средний олимпиадный балл
+  index: number // итоговый олимпиадный индекс, %
+}
+
+// ===================== Риски (ML-прототип) =====================
+export interface RiskFactorBreakdown {
+  label: string
+  value: number // 0..100
+}
+
+export interface RiskPrediction {
+  studentId: string
+  fullName: string
+  classId: string
+  grade: GradeLevel
+  riskScore: number
+  riskLevel: RiskLevel
+  factors: RiskFactorBreakdown[]
+  reasons: string[]
+  recommendations: string[]
+}
+
+// ===================== Оценки (страница «Оценки») =====================
+export interface SubjectAverage {
+  subject: string
+  average: number
+}
+
+export interface SubjectGradeRow {
+  subject: string
+  weeks: (number | null)[]
+  final: number
+}
+
+// ===================== Волонтёрство / активность =====================
 export interface VolunteerEvent {
   title: string
   date: string
   hours: number
 }
 
-/** Часы волонтёрства по ученику. */
 export interface VolunteerStudentHours {
   student: string
   className: string
@@ -70,7 +160,7 @@ export interface MonthlyPoint {
   value: number
 }
 
-/** Сводная статистика посещаемости за месяц. */
+// ===================== Посещаемость =====================
 export interface AttendanceSummary {
   totalLessons: number
   present: number
@@ -83,7 +173,7 @@ export type AttendanceMark = 'present' | 'absent' | 'truancy' | 'weekend'
 export interface AttendanceDay {
   day: number
   mark: AttendanceMark
-  outside?: boolean // день не из текущего месяца (для сетки календаря)
+  outside?: boolean
 }
 
 export interface AttendanceTrendPoint {
@@ -100,16 +190,9 @@ export interface AbsenceDetail {
   reason: string
 }
 
-/** Сравнение результатов экзамена: школа / город / регион. */
+// ===================== Экзамены: вспомогательное =====================
 export interface ExamComparePoint {
   period: string
-  school: number
-  city: number
-  region: number
-}
-
-export interface ExamCriterion {
-  name: string
   school: number
   city: number
   region: number
@@ -128,16 +211,16 @@ export interface ExamDynamicPoint {
   previous: number | null
 }
 
-/** Итоговый рейтинг ученика с разбивкой по компонентам. */
+// ===================== Итоговый рейтинг учеников =====================
 export interface StudentRatingRow {
   place: number
   fullName: string
   className: string
   total: number
-  grades: number // из 40
-  olympiads: number // из 30
-  volunteering: number // из 10
-  attendance: number // из 20
+  grades: number
+  olympiads: number
+  volunteering: number
+  attendance: number
 }
 
 export interface RatingDistribution {

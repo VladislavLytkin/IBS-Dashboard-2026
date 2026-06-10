@@ -10,6 +10,7 @@ const TITLES: Record<string, string> = {
   '/volunteering': 'СПД (волонтёрство)',
   '/attendance': 'Посещаемость',
   '/exams': 'Экзамены',
+  '/risks': 'Риски — ML-прогноз',
   '/student-rating': 'Итоговый рейтинг учеников',
   '/reports': 'Отчёты',
   '/settings': 'Настройки',

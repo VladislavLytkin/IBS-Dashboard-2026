@@ -6,6 +6,7 @@ import { OlympiadsPage } from './pages/OlympiadsPage'
 import { VolunteeringPage } from './pages/VolunteeringPage'
 import { AttendancePage } from './pages/AttendancePage'
 import { ExamsPage } from './pages/ExamsPage'
+import { RisksPage } from './pages/RisksPage'
 import { StudentRatingPage } from './pages/StudentRatingPage'
 import { PlaceholderPage } from './pages/PlaceholderPage'
 
@@ -20,6 +21,7 @@ export const router = createBrowserRouter([
       { path: 'volunteering', element: <VolunteeringPage /> },
       { path: 'attendance', element: <AttendancePage /> },
       { path: 'exams', element: <ExamsPage /> },
+      { path: 'risks', element: <RisksPage /> },
       { path: 'student-rating', element: <StudentRatingPage /> },
       { path: 'reports', element: <PlaceholderPage title="Отчёты" /> },
       { path: 'settings', element: <PlaceholderPage title="Настройки" /> },
