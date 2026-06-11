@@ -3,8 +3,10 @@ import path from 'path'
 import { ENV } from '../config/env'
 import type {
   AcademicDebt, ActionLogEntry, AbsenceRecord, AppNotification, AppSettings, ExpulsionRequest,
-  InternalMessage, OlympiadApplication, ReportHistoryItem, SupportTicket, User,
+  InternalMessage, OlympiadApplication, OlympiadCatalogItem, ReportHistoryItem, SpdApplication,
+  SpdEvent, SupportTicket, User,
 } from '../types'
+import { DEFAULT_OLYMPIAD_CATALOG, DEFAULT_SPD_EVENTS } from '../data/defaults'
 
 // Простое JSON-хранилище для изменяемого состояния прототипа
 // (пользователи, настройки, уведомления, история отчётов).
@@ -16,6 +18,9 @@ export interface StoreShape {
   settings: AppSettings
   notifications: AppNotification[]
   olympiadApplications: OlympiadApplication[]
+  olympiadCatalog: OlympiadCatalogItem[]
+  spdEvents: SpdEvent[]
+  spdApplications: SpdApplication[]
   messages: InternalMessage[]
   supportTickets: SupportTicket[]
   actionLog: ActionLogEntry[]
@@ -56,6 +61,9 @@ const EMPTY: StoreShape = {
   settings: DEFAULT_SETTINGS,
   notifications: [],
   olympiadApplications: [],
+  olympiadCatalog: structuredClone(DEFAULT_OLYMPIAD_CATALOG),
+  spdEvents: structuredClone(DEFAULT_SPD_EVENTS),
+  spdApplications: [],
   messages: [],
   supportTickets: [],
   actionLog: [],
@@ -78,6 +86,9 @@ export function load(): StoreShape {
     try {
       cache = JSON.parse(fs.readFileSync(ENV.DB_FILE, 'utf-8')) as StoreShape
       cache.olympiadApplications ??= []
+      cache.olympiadCatalog ??= structuredClone(DEFAULT_OLYMPIAD_CATALOG)
+      cache.spdEvents ??= structuredClone(DEFAULT_SPD_EVENTS)
+      cache.spdApplications ??= []
       cache.messages ??= []
       cache.supportTickets ??= []
       cache.actionLog ??= []

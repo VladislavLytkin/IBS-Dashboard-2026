@@ -23,6 +23,13 @@ function log(user: PublicUser, actionType: string, target: string, description: 
   addActionLog({ userId: user.id, role: user.role, actionType, target, description })
 }
 
+/** Учитель работает только со своими предметами; завуч и выше — с любыми. */
+function subjectAllowed(user: PublicUser, subject: string): boolean {
+  if (user.role !== 'TEACHER') return true
+  const own = user.subjects ?? []
+  return own.length === 0 || own.includes(subject)
+}
+
 function canMessage(from: PublicUser, to: PublicUser, type: InternalMessageType): boolean {
   if (from.id === to.id) return false
   if (from.role === 'DIRECTOR') return true
@@ -220,6 +227,10 @@ workflowRouter.post('/absences', (req: AuthedRequest, res) => {
     res.status(403).json({ error: 'Нет доступа к этому ученику' })
     return
   }
+  if (!subjectAllowed(req.user!, parsed.data.subject)) {
+    res.status(403).json({ error: 'Можно выбирать только свои предметы' })
+    return
+  }
   const student = getStudent(parsed.data.studentId)
   if (!student) {
     res.status(404).json({ error: 'Ученик не найден' })
@@ -275,6 +286,10 @@ workflowRouter.post('/debts', (req: AuthedRequest, res) => {
   }
   if (!canAccessStudent(req.user!, parsed.data.studentId)) {
     res.status(403).json({ error: 'Нет доступа к этому ученику' })
+    return
+  }
+  if (!subjectAllowed(req.user!, parsed.data.subject)) {
+    res.status(403).json({ error: 'Можно выбирать только свои предметы' })
     return
   }
   const student = getStudent(parsed.data.studentId)

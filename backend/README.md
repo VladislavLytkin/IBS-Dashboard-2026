@@ -42,6 +42,14 @@ npm run build && npm start
 | GET | `/students`, `/students/:id` | авторизованные |
 | GET | `/exams/comparison`, `/exams/by-class` | авторизованные |
 | GET | `/olympiads/comparison`, `/olympiads/rating`, `/olympiads/by-class` | авторизованные |
+| GET | `/olympiads/catalog` | авторизованные (поиск по `?q=`) |
+| POST | `/olympiads/catalog` | авторизованные (URL сайта обязателен) |
+| GET/POST | `/olympiads/applications` | авторизованные |
+| PATCH | `/olympiads/applications/:id` | ADMIN |
+| GET | `/spd/events` | авторизованные (учитель/ученик — только свои классы) |
+| GET | `/spd/applications` | авторизованные (ученик — свои, учитель — своих классов) |
+| POST | `/spd/applications` | STUDENT |
+| PATCH | `/spd/applications/:id` | ADMIN, HEAD_TEACHER (approve/reject + причина) |
 | GET | `/risks`, `/risks/:studentId` | управленческие роли + ANALYST + TEACHER |
 | GET | `/settings` | авторизованные |
 | PATCH | `/settings` | ADMIN, DIRECTOR |

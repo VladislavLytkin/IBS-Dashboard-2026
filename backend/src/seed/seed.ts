@@ -1,8 +1,9 @@
-import bcrypt from 'bcryptjs'
+﻿import bcrypt from 'bcryptjs'
 import { DEFAULT_SETTINGS, save, type StoreShape } from '../db/store'
+import { DEFAULT_OLYMPIAD_CATALOG, DEFAULT_SPD_EVENTS } from '../data/defaults'
 import type {
   AcademicDebt, AbsenceRecord, ActionLogEntry, AppNotification, InternalMessage,
-  OlympiadApplication, ReportHistoryItem, SupportTicket, User,
+  OlympiadApplication, ReportHistoryItem, SpdApplication, SupportTicket, User,
 } from '../types'
 
 // =====================================================================
@@ -10,13 +11,15 @@ import type {
 // Пароли НЕ хранятся в открытом виде — в базу пишется только bcrypt-хэш.
 // Для реального продакшена эти учётки и пароли необходимо удалить/заменить.
 // =====================================================================
-const DEMO_USERS: { email: string; password: string; fullName: string; role: User['role']; classIds?: string[]; subjects?: string[] }[] = [
+const DEMO_USERS: { email: string; password: string; fullName: string; role: User['role']; classIds?: string[]; subjects?: string[]; studentId?: string }[] = [
   { email: 'admin@school123.local', password: 'Admin_2026_Dashboard!', fullName: 'Администратор Системы', role: 'ADMIN' },
   { email: 'director@school123.local', password: 'Director_2026_IBS!', fullName: 'Директор Школы', role: 'DIRECTOR' },
   { email: 'headteacher@school123.local', password: 'Zavuch_2026_School!', fullName: 'Завуч По УВР', role: 'HEAD_TEACHER' },
   { email: 'analyst@school123.local', password: 'Analyst_2026_Data!', fullName: 'Аналитик Данных', role: 'ANALYST' },
-  { email: 'teacher@school123.local', password: 'Teacher_2026_Class!', fullName: 'Учитель Предметник', role: 'TEACHER', classIds: ['2026-11А', '2026-11Б'], subjects: ['Математика'] },
-  { email: 'student@school123.local', password: 'Student_2026_Profile!', fullName: 'Петрова Анна', role: 'STUDENT', classIds: ['2026-11Б'] },
+  { email: 'teacher@school123.local', password: 'Teacher_2026_Class!', fullName: 'Учитель Предметник', role: 'TEACHER', classIds: ['2026-11А', '2026-11Б'], subjects: ['Математика', 'Информатика'] },
+  // studentId привязывает учётку к конкретному сгенерированному ученику (2026-11Б-s5 — Соколова Анна),
+  // чтобы риски и личные данные показывались строго для этого ученика.
+  { email: 'student@school123.local', password: 'Student_2026_Profile!', fullName: 'Соколова Анна', role: 'STUDENT', classIds: ['2026-11Б'], studentId: '2026-11Б-s5' },
 ]
 
 const now = new Date()
@@ -40,7 +43,7 @@ const OLYMPIAD_APPLICATIONS: OlympiadApplication[] = [
   {
     id: 'oa1',
     createdBy: 'student',
-    studentName: 'Петрова Анна',
+    studentName: 'Соколова Анна',
     classId: '2026-11Б',
     title: 'Высшая проба',
     level: 'перечневая',
@@ -62,11 +65,11 @@ const MESSAGES: InternalMessage[] = [
 ]
 
 const DEBTS: AcademicDebt[] = [
-  { id: 'debt1', studentId: '2026-11Б-s1', studentName: 'Петрова Анна', classId: '2026-11Б', subject: 'Математика', topic: 'Производная', reason: 'Не закрыта контрольная работа', dueDate: '2026-06-20', comment: 'Подготовить решение задач 1-8', status: 'assigned', createdBy: 'teacher', createdAt: iso(1) },
+  { id: 'debt1', studentId: '2026-11Б-s5', studentName: 'Соколова Анна', classId: '2026-11Б', subject: 'Математика', topic: 'Производная', reason: 'Не закрыта контрольная работа', dueDate: '2026-06-20', comment: 'Подготовить решение задач 1-8', status: 'assigned', createdBy: 'teacher', createdAt: iso(1) },
 ]
 
 const ABSENCES: AbsenceRecord[] = [
-  { id: 'abs1', studentId: '2026-11Б-s1', studentName: 'Петрова Анна', classId: '2026-11Б', date: '2026-06-05', lesson: '3', subject: 'Математика', type: 'truancy', reasonOrComment: 'Без уважительной причины', createdBy: 'teacher', createdAt: iso(1) },
+  { id: 'abs1', studentId: '2026-11Б-s5', studentName: 'Соколова Анна', classId: '2026-11Б', date: '2026-06-05', lesson: '3', subject: 'Математика', type: 'truancy', reasonOrComment: 'Без уважительной причины', createdBy: 'teacher', createdAt: iso(1) },
 ]
 
 const SUPPORT: SupportTicket[] = [
@@ -74,7 +77,20 @@ const SUPPORT: SupportTicket[] = [
 ]
 
 const ACTION_LOG: ActionLogEntry[] = [
-  { id: 'log1', userId: 'teacher', role: 'TEACHER', actionType: 'absence_record', target: 'Петрова Анна', description: 'Проставлен прогул по математике', createdAt: iso(1) },
+  { id: 'log1', userId: 'teacher', role: 'TEACHER', actionType: 'absence_record', target: 'Соколова Анна', description: 'Проставлен прогул по математике', createdAt: iso(1) },
+]
+
+const SPD_APPLICATIONS: SpdApplication[] = [
+  {
+    id: 'spda1',
+    studentId: '2026-11Б-s5',
+    studentName: 'Соколова Анна',
+    classId: '2026-11Б',
+    eventId: 'spd_9',
+    comment: 'Хочу помочь с раздачей ленточек у входа.',
+    status: 'pending',
+    createdAt: iso(2),
+  },
 ]
 
 async function main() {
@@ -88,6 +104,7 @@ async function main() {
       passwordHash: await bcrypt.hash(u.password, 10),
       classIds: u.classIds,
       subjects: u.subjects,
+      studentId: u.studentId,
       createdAt: iso(30),
     })
   }
@@ -97,6 +114,9 @@ async function main() {
     settings: DEFAULT_SETTINGS,
     notifications: NOTIFICATIONS,
     olympiadApplications: OLYMPIAD_APPLICATIONS,
+    olympiadCatalog: DEFAULT_OLYMPIAD_CATALOG,
+    spdEvents: DEFAULT_SPD_EVENTS,
+    spdApplications: SPD_APPLICATIONS,
     messages: MESSAGES,
     supportTickets: SUPPORT,
     actionLog: ACTION_LOG,

@@ -13,11 +13,15 @@ export function isClassVisible(user: PublicUser, classId: string): boolean {
 
 export function studentForUser(user: PublicUser, year = new Date().getFullYear()): Student | undefined {
   if (user.role !== 'STUDENT') return undefined
+  // Привязка строго к конкретному ученику: сначала явный studentId из профиля,
+  // затем точное совпадение ФИО. Фолбэк на «первого из класса» запрещён —
+  // он приводил к показу данных чужого ученика.
+  if (user.studentId) return getStudent(user.studentId)
   const classIds = user.classIds ?? []
   const candidates = classIds.length
     ? classIds.flatMap((classId) => listStudents(year, undefined, classId))
     : listStudents(year)
-  return candidates.find((s) => s.fullName === user.fullName) ?? candidates[0]
+  return candidates.find((s) => s.fullName === user.fullName)
 }
 
 export function filterStudentsForUser(user: PublicUser, students: Student[], year: number): Student[] {

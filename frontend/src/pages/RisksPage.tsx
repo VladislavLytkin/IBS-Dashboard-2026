@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import type { ParallelFilterValue, RiskLevel } from '../types'
 import { risksService } from '../services'
+import { useAuth } from '../auth/AuthContext'
 import { useFilters } from '../context/FiltersContext'
 import { useApi } from '../hooks/useApi'
 import { IconRisk, IconSpark } from '../components/icons'
@@ -11,6 +12,7 @@ const RISK_BADGE: Record<RiskLevel, string> = {
 }
 
 export function RisksPage() {
+  const { user } = useAuth()
   const { year } = useFilters()
   const [parallel, setParallel] = useState<ParallelFilterValue>('all')
   const grade = parallel === 'all' ? 'all' : parallel
@@ -18,7 +20,10 @@ export function RisksPage() {
   const predictions = data ?? []
 
   const [selectedId, setSelectedId] = useState<string | null>(null)
-  const selected = predictions.find((p) => p.studentId === selectedId) ?? predictions[0]
+  // Ученик видит строго свои риски (по studentId профиля), без фолбэка на первого в списке.
+  const selected = user?.role === 'STUDENT'
+    ? predictions.find((p) => p.studentId === user.studentId) ?? predictions[0]
+    : predictions.find((p) => p.studentId === selectedId) ?? predictions[0]
 
   const summary = useMemo(() => ({
     total: predictions.length,
@@ -49,7 +54,7 @@ export function RisksPage() {
       ) : error ? (
         <Card><EmptyState message={error} /></Card>
       ) : predictions.length === 0 ? (
-        <Card><EmptyState message="Нет данных за выбранный период." /></Card>
+        <Card><EmptyState message={user?.role === 'STUDENT' ? 'У этого ученика пока нет зафиксированных рисков' : 'Нет данных за выбранный период.'} /></Card>
       ) : (
         <div className="grid grid-2-wide">
           <Card title="ML-прогноз риска" headerRight={<span className="flex text-muted" style={{ fontSize: 13 }}><IconRisk width={16} height={16} /> по убыванию риска</span>}>

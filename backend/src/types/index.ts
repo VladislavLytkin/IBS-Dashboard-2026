@@ -14,8 +14,9 @@ export interface User {
   fullName: string
   role: Role
   passwordHash: string
-  classIds?: string[] // для роли TEACHER — закреплённые классы
+  classIds?: string[] // для роли TEACHER — закреплённые классы (назначает завуч/админ)
   subjects?: string[] // для TEACHER/HEAD_TEACHER — предметы профиля
+  studentId?: string // для роли STUDENT — привязка к конкретному ученику
   createdAt: string
 }
 
@@ -120,6 +121,47 @@ export interface OlympiadApplication {
   confirmationUrl: string
   studentComment: string
   status: OlympiadApplicationStatus
+  rejectionReason?: string
+  createdAt: string
+  reviewedAt?: string
+  reviewedBy?: string
+}
+
+/** Справочник олимпиад: пополняется учениками/учителями при подаче заявок. */
+export interface OlympiadCatalogItem {
+  id: string
+  name: string
+  subject: string
+  officialWebsiteUrl: string
+  createdBy?: string
+  createdAt: string
+}
+
+// ===================== СПД (социально полезная деятельность) =====================
+export type SpdEventType = 'Волонтёрство' | 'Социальный проект' | 'Наставничество' | 'Школьное мероприятие'
+export type SpdEventStatus = 'approved' | 'draft'
+
+export interface SpdEvent {
+  id: string
+  title: string
+  type: SpdEventType
+  date: string // ISO-дата, периоды фильтра строятся по этим датам
+  hours: number
+  organizer: string
+  classIds: string[]
+  status: SpdEventStatus
+}
+
+export type SpdApplicationStatus = 'pending' | 'approved' | 'rejected'
+
+export interface SpdApplication {
+  id: string
+  studentId: string
+  studentName: string
+  classId: string
+  eventId: string
+  comment?: string
+  status: SpdApplicationStatus
   rejectionReason?: string
   createdAt: string
   reviewedAt?: string

@@ -3,8 +3,8 @@ import { useState, type ComponentType, type SVGProps } from 'react'
 import { useAuth } from '../auth/AuthContext'
 import { ROLE_LABELS, type Role } from '../api/types'
 import {
-  IconChart, IconChevronLeft, IconChevronRight, IconClock, IconExam, IconGlobe, IconGrades, IconHome,
-  IconLogout, IconOlympiad, IconReport, IconRisk, IconSchool, IconSettings, IconStudent, IconUsers,
+  IconChart, IconChevronLeft, IconChevronRight, IconClock, IconExam, IconGlobe, IconGrades, IconHelp,
+  IconHome, IconLogout, IconOlympiad, IconReport, IconRisk, IconSchool, IconSettings, IconStudent, IconUsers,
 } from './icons'
 import { ProfileModal } from './ProfileModal'
 
@@ -22,7 +22,7 @@ const MAIN_NAV: NavItem[] = [
   { to: '/grades', label: 'Оценки', Icon: IconGrades, roles: ['HEAD_TEACHER', 'TEACHER', 'STUDENT'] },
   { to: '/olympiads', label: 'Олимпиады', Icon: IconOlympiad, roles: ['ADMIN', 'DIRECTOR', 'HEAD_TEACHER', 'TEACHER', 'STUDENT'] },
   { to: '/attendance', label: 'Пропуски', Icon: IconClock, roles: ['HEAD_TEACHER', 'TEACHER', 'STUDENT'] },
-  { to: '/volunteering', label: 'Активность', Icon: IconGlobe, roles: ['HEAD_TEACHER', 'TEACHER'] },
+  { to: '/volunteering', label: 'Активность (СПД)', Icon: IconGlobe, roles: ['ADMIN', 'HEAD_TEACHER', 'TEACHER', 'STUDENT'] },
   { to: '/risks', label: 'Риски', Icon: IconRisk, roles: ['DIRECTOR', 'HEAD_TEACHER', 'TEACHER', 'STUDENT', 'ANALYST'] },
   { to: '/students', label: 'Ученики', Icon: IconStudent, roles: ['HEAD_TEACHER', 'TEACHER'] },
   { to: '/classes', label: 'Классы', Icon: IconUsers, roles: ['DIRECTOR', 'HEAD_TEACHER', 'TEACHER'] },
@@ -32,9 +32,10 @@ const MAIN_NAV: NavItem[] = [
 
 const SECONDARY_NAV: NavItem[] = [
   { to: '/reports', label: 'Отчёты', Icon: IconReport, roles: ['DIRECTOR', 'ADMIN', 'ANALYST'] },
-  { to: '/support', label: 'Поддержка', Icon: IconSettings, roles: ['ADMIN', 'DIRECTOR', 'HEAD_TEACHER', 'TEACHER', 'STUDENT'] },
+  { to: '/support', label: 'Поддержка', Icon: IconHelp, roles: ['ADMIN', 'DIRECTOR', 'HEAD_TEACHER', 'TEACHER', 'STUDENT'] },
   { to: '/action-log', label: 'Журнал действий', Icon: IconChart, roles: ['ADMIN', 'DIRECTOR'] },
-  { to: '/settings', label: 'Настройки', Icon: IconSettings, roles: ['ADMIN', 'DIRECTOR'] },
+  // Настройки доступны всем: персонализация цветов — личная, системные секции внутри страницы по ролям.
+  { to: '/settings', label: 'Настройки', Icon: IconSettings },
   { to: '/users', label: 'Пользователи', Icon: IconUsers, roles: ['ADMIN'] },
 ]
 
@@ -61,9 +62,10 @@ export function Sidebar({ open, collapsed, onToggleCollapse, onNavigate }: Sideb
 
   const renderLink = ({ to, label, Icon, roles }: NavItem) => {
     if (roles && !hasRole(...roles)) return null
+    const settingsCls = to === '/settings' ? ' sidebar__link--settings' : ''
     return (
       <NavLink key={to} to={to} end={to === '/'} title={collapsed ? label : undefined}
-        className={({ isActive }) => `sidebar__link${isActive ? ' is-active' : ''}`} onClick={onNavigate}>
+        className={({ isActive }) => `sidebar__link${settingsCls}${isActive ? ' is-active' : ''}`} onClick={onNavigate}>
         <Icon />
         <span className="sidebar__label">{label}</span>
       </NavLink>

@@ -21,6 +21,7 @@ export interface PublicUser {
   role: Role
   classIds?: string[]
   subjects?: string[]
+  studentId?: string
   createdAt: string
 }
 
@@ -182,6 +183,46 @@ export interface OlympiadApplication {
   confirmationUrl: string
   studentComment: string
   status: OlympiadApplicationStatus
+  rejectionReason?: string
+  createdAt: string
+  reviewedAt?: string
+  reviewedBy?: string
+}
+
+/** Справочник олимпиад для autocomplete-поиска. */
+export interface OlympiadCatalogItem {
+  id: string
+  name: string
+  subject: string
+  officialWebsiteUrl: string
+  createdBy?: string
+  createdAt: string
+}
+
+// ===================== СПД =====================
+export type SpdEventType = 'Волонтёрство' | 'Социальный проект' | 'Наставничество' | 'Школьное мероприятие'
+
+export interface SpdEvent {
+  id: string
+  title: string
+  type: SpdEventType
+  date: string
+  hours: number
+  organizer: string
+  classIds: string[]
+  status: 'approved' | 'draft'
+}
+
+export type SpdApplicationStatus = 'pending' | 'approved' | 'rejected'
+
+export interface SpdApplication {
+  id: string
+  studentId: string
+  studentName: string
+  classId: string
+  eventId: string
+  comment?: string
+  status: SpdApplicationStatus
   rejectionReason?: string
   createdAt: string
   reviewedAt?: string

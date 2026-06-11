@@ -5,7 +5,8 @@ import { requireAuth } from '../middleware/auth'
 import { parseFilters } from '../utils/query'
 import { olympiadByClass, olympiadComparison, olympiadRating } from '../data/generate'
 import type { AuthedRequest } from '../middleware/auth'
-import type { OlympiadApplicationStatus } from '../types'
+import type { OlympiadApplicationStatus, OlympiadCatalogItem } from '../types'
+import { visibleClassIds } from '../utils/access'
 
 export const olympiadsRouter = Router()
 olympiadsRouter.use(requireAuth)
@@ -15,14 +16,58 @@ olympiadsRouter.get('/comparison', (req, res) => {
   res.json({ year, grade: grade ?? null, rows: olympiadComparison(year, grade ?? 11) })
 })
 
-olympiadsRouter.get('/rating', (req, res) => {
+olympiadsRouter.get('/rating', (req: AuthedRequest, res) => {
   const { year, grade } = parseFilters(req)
   const approved = load().olympiadApplications.filter((a) => a.status === 'approved' && a.classId.startsWith(`${year}-`))
-  const rows = olympiadRating(year, grade).map((row) => {
+  let rows = olympiadRating(year, grade).map((row) => {
     const count = approved.filter((a) => a.classId.replace(/^\d+-/, '') === row.classId).length
     return count ? { ...row, index: Math.min(100, row.index + count * 5), participationPct: Math.min(100, row.participationPct + count * 2) } : row
   })
+  const allowed = visibleClassIds(req.user!)
+  if (allowed) {
+    const set = new Set(allowed.map((id) => id.replace(/^\d+-/, '')))
+    rows = rows.filter((r) => set.has(r.classId))
+  }
   res.json(rows.sort((a, b) => b.index - a.index))
+})
+
+// ===================== Справочник олимпиад (поиск + добавление) =====================
+olympiadsRouter.get('/catalog', (req, res) => {
+  const q = typeof req.query.q === 'string' ? req.query.q.trim().toLowerCase() : ''
+  let items = [...load().olympiadCatalog]
+  if (q) items = items.filter((o) => o.name.toLowerCase().includes(q) || o.subject.toLowerCase().includes(q))
+  res.json(items.sort((a, b) => a.name.localeCompare(b.name, 'ru')))
+})
+
+const catalogSchema = z.object({
+  name: z.string().min(2, 'Укажите название олимпиады'),
+  subject: z.string().min(2, 'Укажите предмет'),
+  officialWebsiteUrl: z.string().url('Укажите корректную ссылку на официальный сайт'),
+})
+
+olympiadsRouter.post('/catalog', (req: AuthedRequest, res) => {
+  const parsed = catalogSchema.safeParse(req.body)
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.issues[0]?.message ?? 'Ошибка валидации' })
+    return
+  }
+  const existing = load().olympiadCatalog.find((o) => o.name.trim().toLowerCase() === parsed.data.name.trim().toLowerCase())
+  if (existing) {
+    res.status(409).json({ error: 'Такая олимпиада уже есть в списке' })
+    return
+  }
+  const user = req.user!
+  const item: OlympiadCatalogItem = {
+    id: `oc-${Date.now()}`,
+    name: parsed.data.name.trim(),
+    subject: parsed.data.subject.trim(),
+    officialWebsiteUrl: parsed.data.officialWebsiteUrl.trim(),
+    createdBy: user.id,
+    createdAt: new Date().toISOString(),
+  }
+  update((s) => s.olympiadCatalog.push(item))
+  addActionLog({ userId: user.id, role: user.role, actionType: 'olympiad_catalog_added', target: item.name, description: `Добавлена олимпиада: ${item.subject}` })
+  res.status(201).json(item)
 })
 
 olympiadsRouter.get('/by-class', (req, res) => {

@@ -4,14 +4,73 @@ import { settingsService } from '../services'
 import { ApiError } from '../api/client'
 import { useAuth } from '../auth/AuthContext'
 import { YEARS } from '../context/FiltersContext'
-import { useTheme } from '../context/ThemeContext'
+import { ACCENT_COLORS, BG_COLORS, useTheme, type ColorOption } from '../context/ThemeContext'
 import { GRADE_LEVELS } from '../types'
 import { Card, EmptyState, PageFooter } from '../components/ui'
+
+/** Компактный ряд цветовых свотчей (как в DuckDuckGo): кружки с подписью-tooltip. */
+function SwatchRow({ options, value, onChange, allowReset }: {
+  options: ColorOption[]
+  value: string | null
+  onChange: (v: string | null) => void
+  allowReset?: boolean
+}) {
+  return (
+    <div className="swatches" role="radiogroup">
+      {allowReset && (
+        <button
+          type="button"
+          className={`swatch swatch--auto${value === null ? ' is-active' : ''}`}
+          title="По теме (по умолчанию)"
+          aria-label="По теме"
+          onClick={() => onChange(null)}
+        >
+          A
+        </button>
+      )}
+      {options.map((o) => (
+        <button
+          type="button"
+          key={o.value}
+          className={`swatch${value === o.value ? ' is-active' : ''}`}
+          style={{ background: o.value }}
+          title={o.name}
+          aria-label={o.name}
+          role="radio"
+          aria-checked={value === o.value}
+          onClick={() => onChange(o.value)}
+        />
+      ))}
+    </div>
+  )
+}
+
+function PersonalizationCard() {
+  const { accent, setAccent, appBg, setAppBg } = useTheme()
+  return (
+    <Card title="Персонализация">
+      <div className="form-grid">
+        <div className="setting-field">
+          <span className="field__label">Цвет акцента интерфейса</span>
+          <SwatchRow options={ACCENT_COLORS} value={accent} onChange={setAccent} allowReset />
+        </div>
+        <div className="setting-field">
+          <span className="field__label">Цвет фона</span>
+          <SwatchRow options={BG_COLORS} value={appBg} onChange={setAppBg} allowReset />
+        </div>
+      </div>
+      <div className="note note--blue" style={{ marginTop: 14 }}>
+        Личная настройка: сохраняется в этом браузере и не влияет на других пользователей.
+      </div>
+    </Card>
+  )
+}
 
 export function SettingsPage() {
   const { hasRole } = useAuth()
   const { setTheme } = useTheme()
   const canEdit = hasRole('ADMIN', 'DIRECTOR')
+  const canViewSystem = hasRole('ADMIN', 'DIRECTOR')
   const [settings, setSettings] = useState<AppSettings | null>(null)
   const [status, setStatus] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -20,6 +79,16 @@ export function SettingsPage() {
   useEffect(() => {
     settingsService.get().then(setSettings).catch((e) => setError(e instanceof ApiError ? e.message : 'Ошибка')).finally(() => setLoading(false))
   }, [])
+
+  // Остальным ролям доступна только личная персонализация.
+  if (!canViewSystem) {
+    return (
+      <div className="page">
+        <PersonalizationCard />
+        <PageFooter />
+      </div>
+    )
+  }
 
   if (loading) return <div className="page"><Card><EmptyState message="Загрузка…" /></Card></div>
   if (!settings) return <div className="page"><Card><EmptyState message={error ?? 'Нет настроек'} /></Card></div>
@@ -43,6 +112,8 @@ export function SettingsPage() {
   return (
     <div className="page">
       {!canEdit && <div className="note note--blue">Просмотр только для чтения. Изменять настройки могут роли ADMIN и DIRECTOR.</div>}
+
+      <PersonalizationCard />
 
       <Card title="Общие">
         <div className="form-grid">

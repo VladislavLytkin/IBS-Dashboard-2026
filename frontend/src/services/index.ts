@@ -2,8 +2,9 @@ import { apiDelete, apiDownload, apiGet, apiPatch, apiPost, buildQuery } from '.
 import type {
   ApiClassInfo, ApiStudent, AppNotification, AppSettings, DashboardSummary,
   AcademicDebt, ActionLogEntry, AbsenceRecord, ExamComparisonResponse, ExpulsionRequest, InternalMessage,
-  InternalMessageType, OlympiadApplication, OlympiadComparisonResponse, OlympiadRatingRow, PublicUser,
-  ReportHistoryItem, ReportType, RiskPrediction, Role, SupportTicket, SupportTicketStatus,
+  InternalMessageType, OlympiadApplication, OlympiadCatalogItem, OlympiadComparisonResponse,
+  OlympiadRatingRow, PublicUser, ReportHistoryItem, ReportType, RiskPrediction, Role,
+  SpdApplication, SpdEvent, SupportTicket, SupportTicketStatus,
 } from '../api/types'
 
 export interface Filters {
@@ -55,6 +56,19 @@ export const olympiadsService = {
     apiPost<OlympiadApplication>('/olympiads/applications', data),
   reviewApplication: (id: string, status: 'approved' | 'rejected', rejectionReason?: string) =>
     apiPatch<OlympiadApplication>(`/olympiads/applications/${id}`, { status, rejectionReason }),
+  catalog: () => apiGet<OlympiadCatalogItem[]>('/olympiads/catalog'),
+  addToCatalog: (data: { name: string; subject: string; officialWebsiteUrl: string }) =>
+    apiPost<OlympiadCatalogItem>('/olympiads/catalog', data),
+}
+
+// ===================== СПД (социально полезная деятельность) =====================
+export const spdService = {
+  events: () => apiGet<SpdEvent[]>('/spd/events'),
+  applications: () => apiGet<SpdApplication[]>('/spd/applications'),
+  createApplication: (data: { eventId: string; comment?: string }) =>
+    apiPost<SpdApplication>('/spd/applications', data),
+  reviewApplication: (id: string, status: 'approved' | 'rejected', rejectionReason?: string) =>
+    apiPatch<SpdApplication>(`/spd/applications/${id}`, { status, rejectionReason }),
 }
 
 // ===================== Risks =====================

@@ -283,9 +283,14 @@ export function riskByStudent(studentId: string): RiskPrediction | undefined {
 }
 
 // ===================== Дашборд =====================
-export function dashboardSummary(year: number, grade?: number) {
-  const classes = classRating(year, grade)
-  const students = listStudents(year, grade)
+export function dashboardSummary(year: number, grade?: number, allowedClassIds?: string[] | null) {
+  let classes = classRating(year, grade)
+  let students = listStudents(year, grade)
+  if (allowedClassIds) {
+    const allowed = new Set(allowedClassIds)
+    classes = classes.filter((c) => allowed.has(c.id))
+    students = students.filter((s) => allowed.has(s.classId))
+  }
   const riskRows = students
   const avgFinal = classes.length ? round1(classes.reduce((s, c) => s + c.finalScore, 0) / classes.length) : 0
   const avgAttendance = classes.length ? round1(classes.reduce((s, c) => s + c.attendanceScore, 0) / classes.length) : 0

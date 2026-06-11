@@ -15,6 +15,7 @@ import { settingsRouter } from './settings/routes'
 import { notificationsRouter } from './notifications/routes'
 import { reportsRouter } from './reports/routes'
 import { workflowRouter } from './workflow/routes'
+import { spdRouter } from './spd/routes'
 
 export function createApp() {
   const app = express()
@@ -38,6 +39,7 @@ export function createApp() {
   app.use('/api/notifications', notificationsRouter)
   app.use('/api/reports', reportsRouter)
   app.use('/api/workflow', workflowRouter)
+  app.use('/api/spd', spdRouter)
 
   app.use((_req, res) => res.status(404).json({ error: 'Маршрут не найден' }))
 

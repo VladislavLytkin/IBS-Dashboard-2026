@@ -29,7 +29,8 @@ export function HomePage() {
   const quickActions = getQuickActions(user?.role)
 
   if (user?.role === 'STUDENT') {
-    const risk = ownRisk.data?.[0]
+    // Берём риски строго по studentId профиля, а не первый элемент массива.
+    const risk = (ownRisk.data ?? []).find((r) => r.studentId === user.studentId) ?? ownRisk.data?.[0]
     const apps = applications.data ?? []
     return (
       <div className="page">
@@ -50,7 +51,7 @@ export function HomePage() {
                 <h3 style={{ fontSize: 14, margin: '16px 0 8px' }}>Рекомендации</h3>
                 <ul className="reco-list">{risk.recommendations.map((r) => <li key={r}>{r}</li>)}</ul>
               </>
-            ) : <EmptyState message="Личные данные не найдены." />}
+            ) : <EmptyState message="У этого ученика пока нет зафиксированных рисков" />}
           </Card>
           <Card title="Быстрые действия">
             <div className="quick-actions">

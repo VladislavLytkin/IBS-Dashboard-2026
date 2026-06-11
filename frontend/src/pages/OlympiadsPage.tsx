@@ -1,5 +1,6 @@
-import { useMemo, useState, type FormEvent, type ReactNode } from 'react'
-import type { OlympiadApplication, OlympiadApplicationStatus } from '../api/types'
+import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react'
+import type { OlympiadApplication, OlympiadApplicationStatus, OlympiadCatalogItem } from '../api/types'
+import { ApiError } from '../api/client'
 import type { ParallelFilterValue } from '../types'
 import { olympiadsService } from '../services'
 import { useAuth } from '../auth/AuthContext'
@@ -178,6 +179,114 @@ function ApplicationsCard({
   )
 }
 
+/** Autocomplete-поиск олимпиады по справочнику с возможностью добавить новую. */
+function OlympiadSearch({ value, onSelect }: { value: string; onSelect: (item: { name: string; subject?: string }) => void }) {
+  const catalog = useApi(() => olympiadsService.catalog(), [])
+  const [query, setQuery] = useState(value)
+  const [open, setOpen] = useState(false)
+  const [adding, setAdding] = useState(false)
+  const [newItem, setNewItem] = useState({ name: '', subject: '', officialWebsiteUrl: '' })
+  const [error, setError] = useState<string | null>(null)
+  const boxRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => setQuery(value), [value])
+  useEffect(() => {
+    const onDocClick = (e: MouseEvent) => {
+      if (boxRef.current && !boxRef.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', onDocClick)
+    return () => document.removeEventListener('mousedown', onDocClick)
+  }, [])
+
+  const items = catalog.data ?? []
+  const q = query.trim().toLowerCase()
+  const matches = q ? items.filter((o) => o.name.toLowerCase().includes(q) || o.subject.toLowerCase().includes(q)) : items
+
+  const pick = (item: OlympiadCatalogItem) => {
+    onSelect({ name: item.name, subject: item.subject })
+    setQuery(item.name)
+    setOpen(false)
+    setAdding(false)
+  }
+
+  const urlValid = (() => {
+    try {
+      const u = new URL(newItem.officialWebsiteUrl)
+      return u.protocol === 'http:' || u.protocol === 'https:'
+    } catch {
+      return false
+    }
+  })()
+  const canAdd = newItem.name.trim().length >= 2 && newItem.subject.trim().length >= 2 && urlValid
+
+  const addNew = async () => {
+    setError(null)
+    try {
+      const created = await olympiadsService.addToCatalog({
+        name: newItem.name.trim(),
+        subject: newItem.subject.trim(),
+        officialWebsiteUrl: newItem.officialWebsiteUrl.trim(),
+      })
+      catalog.reload()
+      pick(created)
+      setNewItem({ name: '', subject: '', officialWebsiteUrl: '' })
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : 'Не удалось добавить олимпиаду')
+    }
+  }
+
+  return (
+    <div className="ac" ref={boxRef}>
+      <input
+        className="input"
+        required
+        placeholder="Начните вводить название…"
+        value={query}
+        onFocus={() => setOpen(true)}
+        onChange={(e) => {
+          setQuery(e.target.value)
+          onSelect({ name: e.target.value })
+          setOpen(true)
+        }}
+      />
+      {open && (
+        <div className="ac__panel">
+          {catalog.loading ? (
+            <div className="ac__hint">Загрузка списка…</div>
+          ) : (
+            <>
+              {matches.slice(0, 8).map((o) => (
+                <button type="button" key={o.id} className="ac__item" onClick={() => pick(o)}>
+                  <span className="ac__name">{o.name}</span>
+                  <span className="ac__meta">{o.subject} · <a href={o.officialWebsiteUrl} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()}>сайт</a></span>
+                </button>
+              ))}
+              {matches.length === 0 && <div className="ac__hint">Ничего не найдено.</div>}
+              {!adding ? (
+                <button type="button" className="ac__add" onClick={() => { setAdding(true); setNewItem((p) => ({ ...p, name: query.trim() })) }}>
+                  + Добавить новую олимпиаду
+                </button>
+              ) : (
+                <div className="ac__form">
+                  <input className="input" placeholder="Название олимпиады" value={newItem.name} onChange={(e) => setNewItem({ ...newItem, name: e.target.value })} />
+                  <input className="input" placeholder="Предмет" value={newItem.subject} onChange={(e) => setNewItem({ ...newItem, subject: e.target.value })} />
+                  <input className="input" type="url" placeholder="Ссылка на официальный сайт (https://…)" value={newItem.officialWebsiteUrl} onChange={(e) => setNewItem({ ...newItem, officialWebsiteUrl: e.target.value })} />
+                  {newItem.officialWebsiteUrl && !urlValid && <span className="text-red" style={{ fontSize: 12 }}>Укажите корректную ссылку (http/https)</span>}
+                  {error && <span className="text-red" style={{ fontSize: 12 }}>{error}</span>}
+                  <div className="flex" style={{ gap: 8 }}>
+                    <button type="button" className="btn-primary" disabled={!canAdd} onClick={addNew}>Добавить</button>
+                    <button type="button" className="btn" onClick={() => { setAdding(false); setError(null) }}>Отмена</button>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
 function StudentApplicationForm({ userName, classId, onCreated }: { userName: string; classId: string; onCreated: () => void }) {
   const [form, setForm] = useState({
     studentName: userName,
@@ -204,7 +313,12 @@ function StudentApplicationForm({ userName, classId, onCreated }: { userName: st
   return (
     <Card title="Подать заявку на олимпиаду">
       <form className="form-grid" onSubmit={submit}>
-        <Field label="Название олимпиады"><input className="input" required value={form.title} onChange={(e) => update({ title: e.target.value })} /></Field>
+        <Field label="Название олимпиады">
+          <OlympiadSearch
+            value={form.title}
+            onSelect={({ name, subject }) => update(subject ? { title: name, subject } : { title: name })}
+          />
+        </Field>
         <Field label="Уровень"><select className="select" value={form.level} onChange={(e) => update({ level: e.target.value })}>
           {['школьный', 'муниципальный', 'региональный', 'заключительный', 'всероссийский', 'перечневая', 'другое'].map((x) => <option key={x}>{x}</option>)}
         </select></Field>
