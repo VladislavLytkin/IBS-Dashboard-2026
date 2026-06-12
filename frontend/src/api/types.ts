@@ -22,6 +22,8 @@ export interface PublicUser {
   classIds?: string[]
   subjects?: string[]
   studentId?: string
+  lastSeenAt?: string
+  isOnline?: boolean // вычисляется бэкендом в /workflow/recipients
   createdAt: string
 }
 
@@ -238,6 +240,14 @@ export type InternalMessageType =
   | 'system'
   | 'support'
 
+export interface MessageReaction {
+  userId: string
+  emoji: string
+  createdAt: string
+}
+
+export type MessageStatus = 'sending' | 'sent' | 'read'
+
 export interface InternalMessage {
   id: string
   fromUserId: string
@@ -251,6 +261,13 @@ export interface InternalMessage {
   isRead: boolean
   replyToId?: string
   meta?: Record<string, string>
+  editedAt?: string
+  reactions?: MessageReaction[]
+  hiddenForUserIds?: string[]
+  deletedForEveryone?: boolean
+  deletedAt?: string
+  pinnedByUserId?: string
+  pinnedAt?: string
 }
 
 export type SupportTicketStatus = 'new' | 'in_progress' | 'resolved' | 'rejected'

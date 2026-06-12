@@ -97,6 +97,11 @@ export const workflowService = {
   sendMessage: (data: { toUserId: string; type: InternalMessageType; title: string; text: string; replyToId?: string; meta?: Record<string, string> }) =>
     apiPost<InternalMessage>('/workflow/messages', data),
   markMessageRead: (id: string) => apiPatch<InternalMessage>(`/workflow/messages/${id}/read`),
+  editMessage: (id: string, text: string) => apiPatch<InternalMessage>(`/workflow/messages/${id}/edit`, { text }),
+  pinMessage: (id: string, pinned: boolean) => apiPatch<InternalMessage>(`/workflow/messages/${id}/pin`, { pinned }),
+  hideMessage: (id: string) => apiPatch<InternalMessage>(`/workflow/messages/${id}/hide`),
+  deleteMessage: (id: string) => apiDelete<InternalMessage>(`/workflow/messages/${id}`),
+  reactMessage: (id: string, emoji: string) => apiPost<InternalMessage>(`/workflow/messages/${id}/reactions`, { emoji }),
   support: (filters?: { status?: string; role?: string }) => apiGet<SupportTicket[]>(`/workflow/support${buildQuery({ status: filters?.status, role: filters?.role })}`),
   createSupport: (data: { subject: string; category: SupportTicket['category']; description: string; priority: SupportTicket['priority'] }) =>
     apiPost<SupportTicket>('/workflow/support', data),

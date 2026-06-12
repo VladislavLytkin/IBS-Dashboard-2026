@@ -17,6 +17,7 @@ export interface User {
   classIds?: string[] // для роли TEACHER — закреплённые классы (назначает завуч/админ)
   subjects?: string[] // для TEACHER/HEAD_TEACHER — предметы профиля
   studentId?: string // для роли STUDENT — привязка к конкретному ученику
+  lastSeenAt?: string // обновляется middleware при активности (статус «в сети»)
   createdAt: string
 }
 
@@ -177,6 +178,12 @@ export type InternalMessageType =
   | 'system'
   | 'support'
 
+export interface MessageReaction {
+  userId: string
+  emoji: string
+  createdAt: string
+}
+
 export interface InternalMessage {
   id: string
   fromUserId: string
@@ -190,6 +197,13 @@ export interface InternalMessage {
   isRead: boolean
   replyToId?: string
   meta?: Record<string, string>
+  editedAt?: string
+  reactions?: MessageReaction[]
+  hiddenForUserIds?: string[] // «удалить у меня»
+  deletedForEveryone?: boolean // «удалить у всех»
+  deletedAt?: string
+  pinnedByUserId?: string // закреплённое сообщение диалога
+  pinnedAt?: string
 }
 
 export type SupportTicketStatus = 'new' | 'in_progress' | 'resolved' | 'rejected'

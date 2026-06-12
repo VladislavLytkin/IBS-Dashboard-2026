@@ -50,6 +50,11 @@ npm run build && npm start
 | GET | `/spd/applications` | авторизованные (ученик — свои, учитель — своих классов) |
 | POST | `/spd/applications` | STUDENT |
 | PATCH | `/spd/applications/:id` | ADMIN, HEAD_TEACHER (approve/reject + причина) |
+| GET | `/workflow/recipients`, `/workflow/messages` | авторизованные (по правам переписки) |
+| POST | `/workflow/messages` | авторизованные (по правам переписки) |
+| PATCH | `/workflow/messages/:id/read`, `…/edit`, `…/pin`, `…/hide` | участники диалога |
+| DELETE | `/workflow/messages/:id` | автор или ADMIN/HEAD_TEACHER («удалить у всех») |
+| POST | `/workflow/messages/:id/reactions` | участники диалога (toggle/замена реакции) |
 | GET | `/risks`, `/risks/:studentId` | управленческие роли + ANALYST + TEACHER |
 | GET | `/settings` | авторизованные |
 | PATCH | `/settings` | ADMIN, DIRECTOR |

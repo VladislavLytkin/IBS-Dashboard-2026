@@ -1,8 +1,11 @@
 import type { NextFunction, Request, Response } from 'express'
 import jwt from 'jsonwebtoken'
 import { ENV } from '../config/env'
-import { load } from '../db/store'
+import { load, update } from '../db/store'
 import type { PublicUser, Role } from '../types'
+
+// Не чаще раза в минуту пишем lastSeenAt, чтобы не дёргать диск на каждый запрос.
+const LAST_SEEN_THROTTLE_MS = 60_000
 
 export interface AuthedRequest extends Request {
   user?: PublicUser
@@ -33,6 +36,12 @@ export function requireAuth(req: AuthedRequest, res: Response, next: NextFunctio
     if (!user) {
       res.status(401).json({ error: 'Пользователь не найден' })
       return
+    }
+    if (!user.lastSeenAt || Date.now() - Date.parse(user.lastSeenAt) > LAST_SEEN_THROTTLE_MS) {
+      update((s) => {
+        const u = s.users.find((x) => x.id === user.id)
+        if (u) u.lastSeenAt = new Date().toISOString()
+      })
     }
     const { passwordHash: _omit, ...publicUser } = user
     void _omit

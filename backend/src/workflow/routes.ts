@@ -30,32 +30,48 @@ function subjectAllowed(user: PublicUser, subject: string): boolean {
   return own.length === 0 || own.includes(subject)
 }
 
-function canMessage(from: PublicUser, to: PublicUser, type: InternalMessageType): boolean {
+/** Пересечение классов двух пользователей (учитель ↔ ученик). */
+function shareClass(a: PublicUser, b: PublicUser): boolean {
+  return (a.classIds ?? []).some((id) => (b.classIds ?? []).includes(id))
+}
+
+// Права переписки: ученик — своим учителям и завучу/админу; учитель — ученикам
+// назначенных классов, коллегам и администрации; админ/завуч/директор — всем.
+function canMessage(from: PublicUser, to: PublicUser, _type: InternalMessageType): boolean {
   if (from.id === to.id) return false
-  if (from.role === 'DIRECTOR') return true
-  if (from.role === 'ADMIN') return ['system', 'support', 'message'].includes(type)
-  if (from.role === 'HEAD_TEACHER') return to.role === 'TEACHER' || to.role === 'STUDENT'
-  if (from.role === 'TEACHER') return to.role === 'STUDENT' && (to.classIds ?? []).some((id) => (from.classIds ?? []).includes(id))
-  if (from.role === 'STUDENT') return ['TEACHER', 'ADMIN'].includes(to.role)
+  if (from.role === 'DIRECTOR' || from.role === 'ADMIN' || from.role === 'HEAD_TEACHER') return true
+  if (from.role === 'TEACHER') {
+    if (['TEACHER', 'ADMIN', 'HEAD_TEACHER', 'DIRECTOR'].includes(to.role)) return true
+    return to.role === 'STUDENT' && shareClass(from, to)
+  }
+  if (from.role === 'STUDENT') {
+    if (to.role === 'ADMIN' || to.role === 'HEAD_TEACHER') return true
+    return to.role === 'TEACHER' && shareClass(from, to)
+  }
   return false
+}
+
+const ONLINE_THRESHOLD_MS = 2 * 60_000
+
+function withPresence(u: PublicUser) {
+  return {
+    ...u,
+    isOnline: !!u.lastSeenAt && Date.now() - Date.parse(u.lastSeenAt) < ONLINE_THRESHOLD_MS,
+  }
 }
 
 workflowRouter.get('/recipients', (req: AuthedRequest, res) => {
   const user = req.user!
   const all = load().users.map(toPublic)
-  let recipients: PublicUser[] = []
-  if (user.role === 'DIRECTOR') recipients = all.filter((u) => u.id !== user.id)
-  if (user.role === 'ADMIN') recipients = all.filter((u) => u.id !== user.id && u.role !== 'STUDENT')
-  if (user.role === 'HEAD_TEACHER') recipients = all.filter((u) => u.role === 'TEACHER' || u.role === 'STUDENT')
-  if (user.role === 'TEACHER') recipients = all.filter((u) => u.role === 'STUDENT' && (u.classIds ?? []).some((id) => (user.classIds ?? []).includes(id)))
-  if (user.role === 'STUDENT') recipients = all.filter((u) => u.role === 'TEACHER' || u.role === 'ADMIN')
-  res.json(recipients)
+  const recipients = all.filter((u) => canMessage(user, u, 'message'))
+  res.json(recipients.map(withPresence))
 })
 
 workflowRouter.get('/messages', (req: AuthedRequest, res) => {
   const user = req.user!
   const type = typeof req.query.type === 'string' ? req.query.type : 'all'
   let items = load().messages.filter((m) => m.fromUserId === user.id || m.toUserId === user.id)
+  items = items.filter((m) => !(m.hiddenForUserIds ?? []).includes(user.id))
   if (type !== 'all') items = items.filter((m) => m.type === type)
   if (user.role === 'STUDENT') {
     items = items.map((m) => (m.fromRole === 'HEAD_TEACHER' || m.fromRole === 'DIRECTOR'
@@ -118,6 +134,138 @@ workflowRouter.patch('/messages/:id/read', (req: AuthedRequest, res) => {
     res.status(404).json({ error: 'Сообщение не найдено' })
     return
   }
+  res.json(result)
+})
+
+// ===================== Действия с сообщением =====================
+type StoredMessage = ReturnType<typeof load>['messages'][number]
+
+function findOwnDialogMessage(req: AuthedRequest): StoredMessage | undefined {
+  const user = req.user!
+  return load().messages.find(
+    (m) => m.id === req.params.id && (m.fromUserId === user.id || m.toUserId === user.id),
+  )
+}
+
+// Редактировать можно только своё и непустым текстом.
+workflowRouter.patch('/messages/:id/edit', (req: AuthedRequest, res) => {
+  const msg = findOwnDialogMessage(req)
+  if (!msg) {
+    res.status(404).json({ error: 'Сообщение не найдено' })
+    return
+  }
+  if (msg.fromUserId !== req.user!.id) {
+    res.status(403).json({ error: 'Редактировать можно только свои сообщения' })
+    return
+  }
+  if (msg.deletedForEveryone) {
+    res.status(400).json({ error: 'Сообщение удалено' })
+    return
+  }
+  const text = String(req.body?.text ?? '').trim()
+  if (!text) {
+    res.status(400).json({ error: 'Сообщение не может быть пустым' })
+    return
+  }
+  const result = update(() => {
+    msg.text = text
+    msg.editedAt = new Date().toISOString()
+    return msg
+  })
+  res.json(result)
+})
+
+// Закрепить / открепить сообщение в диалоге.
+workflowRouter.patch('/messages/:id/pin', (req: AuthedRequest, res) => {
+  const msg = findOwnDialogMessage(req)
+  if (!msg) {
+    res.status(404).json({ error: 'Сообщение не найдено' })
+    return
+  }
+  if (msg.deletedForEveryone) {
+    res.status(400).json({ error: 'Сообщение удалено' })
+    return
+  }
+  const pinned = Boolean(req.body?.pinned)
+  const result = update(() => {
+    msg.pinnedByUserId = pinned ? req.user!.id : undefined
+    msg.pinnedAt = pinned ? new Date().toISOString() : undefined
+    return msg
+  })
+  res.json(result)
+})
+
+// «Удалить у меня» — скрыть сообщение только для текущего пользователя.
+workflowRouter.patch('/messages/:id/hide', (req: AuthedRequest, res) => {
+  const msg = findOwnDialogMessage(req)
+  if (!msg) {
+    res.status(404).json({ error: 'Сообщение не найдено' })
+    return
+  }
+  const result = update(() => {
+    msg.hiddenForUserIds = [...new Set([...(msg.hiddenForUserIds ?? []), req.user!.id])]
+    return msg
+  })
+  res.json(result)
+})
+
+// «Удалить у всех» — автор сообщения либо админ/завуч.
+workflowRouter.delete('/messages/:id', (req: AuthedRequest, res) => {
+  const user = req.user!
+  const msg = findOwnDialogMessage(req)
+  if (!msg) {
+    res.status(404).json({ error: 'Сообщение не найдено' })
+    return
+  }
+  const canDelete = msg.fromUserId === user.id || ['ADMIN', 'HEAD_TEACHER'].includes(user.role)
+  if (!canDelete) {
+    res.status(403).json({ error: 'Удалить у всех может автор или администрация' })
+    return
+  }
+  const result = update(() => {
+    msg.deletedForEveryone = true
+    msg.deletedAt = new Date().toISOString()
+    msg.text = ''
+    msg.title = ''
+    msg.reactions = []
+    msg.pinnedByUserId = undefined
+    msg.pinnedAt = undefined
+    return msg
+  })
+  log(user, 'message_deleted', msg.id, 'Сообщение удалено у всех')
+  res.json(result)
+})
+
+// Реакция: одна на пользователя; та же — снимает, другая — заменяет.
+workflowRouter.post('/messages/:id/reactions', (req: AuthedRequest, res) => {
+  const user = req.user!
+  const msg = findOwnDialogMessage(req)
+  if (!msg) {
+    res.status(404).json({ error: 'Сообщение не найдено' })
+    return
+  }
+  if (msg.deletedForEveryone) {
+    res.status(400).json({ error: 'Сообщение удалено' })
+    return
+  }
+  const emoji = String(req.body?.emoji ?? '').trim()
+  if (!emoji || emoji.length > 8) {
+    res.status(400).json({ error: 'Некорректная реакция' })
+    return
+  }
+  const result = update(() => {
+    const reactions = msg.reactions ?? []
+    const own = reactions.find((r) => r.userId === user.id)
+    if (own && own.emoji === emoji) {
+      msg.reactions = reactions.filter((r) => r.userId !== user.id)
+    } else {
+      msg.reactions = [
+        ...reactions.filter((r) => r.userId !== user.id),
+        { userId: user.id, emoji, createdAt: new Date().toISOString() },
+      ]
+    }
+    return msg
+  })
   res.json(result)
 })
 

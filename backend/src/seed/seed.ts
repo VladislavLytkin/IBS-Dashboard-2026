@@ -11,19 +11,21 @@ import type {
 // Пароли НЕ хранятся в открытом виде — в базу пишется только bcrypt-хэш.
 // Для реального продакшена эти учётки и пароли необходимо удалить/заменить.
 // =====================================================================
-const DEMO_USERS: { email: string; password: string; fullName: string; role: User['role']; classIds?: string[]; subjects?: string[]; studentId?: string }[] = [
-  { email: 'admin@school123.local', password: 'Admin_2026_Dashboard!', fullName: 'Администратор Системы', role: 'ADMIN' },
-  { email: 'director@school123.local', password: 'Director_2026_IBS!', fullName: 'Директор Школы', role: 'DIRECTOR' },
-  { email: 'headteacher@school123.local', password: 'Zavuch_2026_School!', fullName: 'Завуч По УВР', role: 'HEAD_TEACHER' },
-  { email: 'analyst@school123.local', password: 'Analyst_2026_Data!', fullName: 'Аналитик Данных', role: 'ANALYST' },
-  { email: 'teacher@school123.local', password: 'Teacher_2026_Class!', fullName: 'Учитель Предметник', role: 'TEACHER', classIds: ['2026-11А', '2026-11Б'], subjects: ['Математика', 'Информатика'] },
+const DEMO_USERS: { id?: string; email: string; password: string; fullName: string; role: User['role']; classIds?: string[]; subjects?: string[]; studentId?: string; lastSeenMinAgo?: number }[] = [
+  { email: 'admin@school123.local', password: 'Admin_2026_Dashboard!', fullName: 'Администратор Системы', role: 'ADMIN', lastSeenMinAgo: 3 },
+  { email: 'director@school123.local', password: 'Director_2026_IBS!', fullName: 'Директор Школы', role: 'DIRECTOR', lastSeenMinAgo: 60 * 26 },
+  { email: 'headteacher@school123.local', password: 'Zavuch_2026_School!', fullName: 'Завуч По УВР', role: 'HEAD_TEACHER', lastSeenMinAgo: 12 },
+  { email: 'analyst@school123.local', password: 'Analyst_2026_Data!', fullName: 'Аналитик Данных', role: 'ANALYST', lastSeenMinAgo: 60 * 24 * 3 },
+  { email: 'teacher@school123.local', password: 'Teacher_2026_Class!', fullName: 'Учитель Предметник', role: 'TEACHER', classIds: ['2026-11А', '2026-11Б'], subjects: ['Математика', 'Информатика'], lastSeenMinAgo: 1 },
+  { id: 'teacher2', email: 'teacher2@school123.local', password: 'Teacher2_2026_Class!', fullName: 'Учитель Словесности', role: 'TEACHER', classIds: ['2026-10А', '2026-10Б'], subjects: ['Русский язык', 'Литература'], lastSeenMinAgo: 60 * 24 * 2 },
   // studentId привязывает учётку к конкретному сгенерированному ученику (2026-11Б-s5 — Соколова Анна),
   // чтобы риски и личные данные показывались строго для этого ученика.
-  { email: 'student@school123.local', password: 'Student_2026_Profile!', fullName: 'Соколова Анна', role: 'STUDENT', classIds: ['2026-11Б'], studentId: '2026-11Б-s5' },
+  { email: 'student@school123.local', password: 'Student_2026_Profile!', fullName: 'Соколова Анна', role: 'STUDENT', classIds: ['2026-11Б'], studentId: '2026-11Б-s5', lastSeenMinAgo: 60 * 5 },
 ]
 
 const now = new Date()
 const iso = (daysAgo: number) => new Date(now.getTime() - daysAgo * 86400000).toISOString()
+const isoMin = (minAgo: number) => new Date(now.getTime() - minAgo * 60000).toISOString()
 
 const NOTIFICATIONS: AppNotification[] = [
   { id: 'n1', type: 'risk', title: 'Рост среднего риска', message: 'В 8Б выявлен рост доли учеников со средним риском', createdAt: iso(0), read: false },
@@ -97,7 +99,7 @@ async function main() {
   const users: User[] = []
   for (const u of DEMO_USERS) {
     users.push({
-      id: u.role.toLowerCase(),
+      id: u.id ?? u.role.toLowerCase(),
       email: u.email,
       fullName: u.fullName,
       role: u.role,
@@ -105,6 +107,7 @@ async function main() {
       classIds: u.classIds,
       subjects: u.subjects,
       studentId: u.studentId,
+      lastSeenAt: u.lastSeenMinAgo != null ? isoMin(u.lastSeenMinAgo) : undefined,
       createdAt: iso(30),
     })
   }
