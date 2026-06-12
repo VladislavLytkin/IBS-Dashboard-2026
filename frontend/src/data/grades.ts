@@ -1,7 +1,6 @@
-import type { GradeRecord, GradeType, GradeValue, SubjectAverage } from '../types'
+import type { GradePeriod, GradeRecord, GradeType, GradeValue, StudentStatus, SubjectAverage } from '../types'
 import { between, hashSeed, pick, rngFor, round1 } from '../utils/random'
-import { MAY_ISO, SCHOOL_DAYS_MAY } from './attendance'
-import { STUDENTS } from './students'
+import { STUDENTS, getAcademicYearStart, getCurrentAcademicYearStart } from './students'
 
 export const SUBJECTS = [
   'Русский язык', 'Математика', 'Английский язык', 'Физика', 'Химия', 'История',
@@ -14,10 +13,99 @@ export const GRADE_TYPES: GradeType[] = [
 
 export const GRADE_VALUES: GradeValue[] = [2, 3, 4, 5]
 
+// ===================== Учебные годы и периоды =====================
+
+export const academicYearLabel = (start: number) => `${start}/${start + 1}`
+
+export const PERIOD_OPTIONS: { value: GradePeriod; label: string }[] = [
+  { value: 'year', label: 'Весь учебный год' },
+  { value: 'sem1', label: '1 семестр' },
+  { value: 'sem2', label: '2 семестр' },
+  { value: 'month', label: 'Месяц' },
+  { value: 'all', label: 'Весь период обучения' },
+]
+
+const MONTH_RU = [
+  'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
+  'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь',
+]
+
+/** Месяцы учебного года (сентябрь–май) в хронологическом порядке. */
+function academicMonths(startYear: number): { y: number; m: number }[] {
+  return [
+    ...[9, 10, 11, 12].map((m) => ({ y: startYear, m })),
+    ...[1, 2, 3, 4, 5].map((m) => ({ y: startYear + 1, m })),
+  ]
+}
+
+/** Опции селекта «Месяц» внутри выбранного учебного года: Сентябрь 2023 … Май 2024. */
+export function getAcademicMonthOptions(academicYear: string): { value: string; label: string }[] {
+  const startYear = Number(academicYear.split('/')[0])
+  return academicMonths(startYear).map(({ y, m }) => ({
+    value: `${y}-${String(m).padStart(2, '0')}`,
+    label: `${MONTH_RU[m - 1]} ${y}`,
+  }))
+}
+
+/** Год поступления: из синтетических данных ученика либо детерминированный фолбэк. */
+function getEnrollmentYear(studentId: string): number {
+  const s = STUDENTS.find((x) => x.id === studentId)
+  if (s) return s.enrollmentYear
+  return getCurrentAcademicYearStart() - 2 - (hashSeed(`enroll:${studentId}`) % 3)
+}
+
+export interface StudentAcademicInfo {
+  enrollmentYear: number
+  status: StudentStatus
+  exitDate: string | null
+  exitReason: string | null
+  /** Учебные годы: от года поступления до текущего (если обучается) либо до года выбытия. */
+  years: string[]
+}
+
+/**
+ * Учебные годы строятся по статусу ученика, а не по имеющимся оценкам:
+ * активный — до текущего учебного года, выбывший — до учебного года exitDate.
+ */
+export function getStudentAcademicInfo(studentId: string): StudentAcademicInfo {
+  const s = STUDENTS.find((x) => x.id === studentId)
+  const enrollmentYear = getEnrollmentYear(studentId)
+  const status = s?.status ?? 'active'
+  const exitDate = s?.exitDate ?? null
+  const endYear = status !== 'active' && exitDate
+    ? getAcademicYearStart(exitDate)
+    : getCurrentAcademicYearStart()
+  const years: string[] = []
+  for (let y = enrollmentYear; y <= endYear; y++) years.push(academicYearLabel(y))
+  return { enrollmentYear, status, exitDate, exitReason: s?.exitReason ?? null, years }
+}
+
+/** Учебный год и семестр по дате: сентябрь–декабрь — 1-й семестр, январь–май — 2-й. */
+export function academicInfoFor(dateIso: string): { academicYear: string; semester: 1 | 2 } {
+  const [y, m] = dateIso.split('-').map(Number)
+  if (m >= 9) return { academicYear: academicYearLabel(y), semester: 1 }
+  return { academicYear: academicYearLabel(y - 1), semester: 2 }
+}
+
+export interface GradeFilter {
+  academicYear: string
+  period: GradePeriod
+  month?: string // 'YYYY-MM', только при period === 'month'
+}
+
+export function filterGradesByPeriod(records: GradeRecord[], f: GradeFilter): GradeRecord[] {
+  if (f.period === 'all') return records
+  const inYear = records.filter((g) => g.academicYear === f.academicYear)
+  if (f.period === 'sem1') return inYear.filter((g) => g.semester === 1)
+  if (f.period === 'sem2') return inYear.filter((g) => g.semester === 2)
+  if (f.period === 'month') return f.month ? inYear.filter((g) => g.date.startsWith(f.month!)) : inYear
+  return inYear
+}
+
 // ===================== Базовая генерация =====================
-// Оценки детерминированно генерируются от studentId: у каждого ученика свой
-// общий уровень (averageGrade из data/students), а по предметам — свой сдвиг,
-// поэтому у одного ученика может быть сильная математика и слабая физика.
+// Оценки детерминированно генерируются от studentId за все учебные годы с момента
+// поступления: общий уровень ученика (averageGrade из data/students) + стабильный
+// сдвиг по предмету (сильная математика — слабая физика) + небольшой дрейф по годам.
 
 function baseAverageFor(studentId: string): number {
   const s = STUDENTS.find((x) => x.id === studentId)
@@ -29,39 +117,56 @@ function classIdFor(studentId: string): string {
   return STUDENTS.find((x) => x.id === studentId)?.classId ?? studentId.replace(/-\d+$/, '')
 }
 
-function pickDays(rnd: () => number, count: number): number[] {
-  const pool = [...SCHOOL_DAYS_MAY]
-  const out: number[] = []
-  while (out.length < count && pool.length) {
-    out.push(pool.splice(Math.floor(rnd() * pool.length), 1)[0])
-  }
-  return out.sort((a, b) => a - b)
+/** Учебная дата в месяце: день 2–26, суббота/воскресенье сдвигаются на понедельник. */
+function schoolDate(y: number, m: number, rnd: () => number): string {
+  let day = 2 + Math.floor(rnd() * 25)
+  const dow = new Date(y, m - 1, day).getDay()
+  if (dow === 0) day += 1
+  else if (dow === 6) day += 2
+  return `${y}-${String(m).padStart(2, '0')}-${String(day).padStart(2, '0')}`
 }
 
 function buildBaseGrades(studentId: string): GradeRecord[] {
   const avg = baseAverageFor(studentId)
   const classId = classIdFor(studentId)
+  const { enrollmentYear, exitDate, years } = getStudentAcademicInfo(studentId)
+  const lastYearStart = enrollmentYear + years.length - 1
+  // Оценок нет после выбытия и после сегодняшней даты.
+  const todayIso = new Date().toISOString().slice(0, 10)
+  const dateLimit = exitDate && exitDate < todayIso ? exitDate : todayIso
   const out: GradeRecord[] = []
 
   for (const subject of SUBJECTS) {
-    const rnd = rngFor(`grades:${studentId}:${subject}`)
-    // Уровень по предмету: общий уровень ученика ± предметный сдвиг.
-    const target = Math.min(4.9, Math.max(2.7, avg + between(rnd, -0.7, 0.7)))
-    const count = 5 + Math.floor(rnd() * 4) // 5–8 оценок за месяц
+    // Сдвиг по предмету стабилен между годами — профиль «сильных» и «слабых» предметов.
+    const subjectOffset = between(rngFor(`subj:${studentId}:${subject}`), -0.7, 0.7)
 
-    for (const day of pickDays(rnd, count)) {
-      let grade = Math.round(target + between(rnd, -0.85, 0.85))
-      if (rnd() < 0.05) grade -= 1 // редкая неудача — так появляются двойки
-      grade = Math.min(5, Math.max(2, grade))
-      out.push({
-        id: `base-${studentId}-${subject}-${day}`,
-        studentId,
-        classId,
-        subject,
-        date: MAY_ISO(day),
-        grade: grade as GradeValue,
-        type: pick(rnd, GRADE_TYPES),
-      })
+    for (let startYear = enrollmentYear; startYear <= lastYearStart; startYear++) {
+      const rnd = rngFor(`grades:${studentId}:${subject}:${startYear}`)
+      const target = Math.min(4.9, Math.max(2.7, avg + subjectOffset + between(rnd, -0.25, 0.25)))
+      const yearLabel = academicYearLabel(startYear)
+
+      for (const { y, m } of academicMonths(startYear)) {
+        const count = 2 + Math.floor(rnd() * 2) // 2–3 оценки в месяц по предмету
+        for (let i = 0; i < count; i++) {
+          let grade = Math.round(target + between(rnd, -0.85, 0.85))
+          if (rnd() < 0.05) grade -= 1 // редкая неудача — так появляются двойки
+          grade = Math.min(5, Math.max(2, grade))
+          const date = schoolDate(y, m, rnd)
+          const type = pick(rnd, GRADE_TYPES)
+          if (date > dateLimit) continue
+          out.push({
+            id: `base-${studentId}-${subject}-${y}-${m}-${i}`,
+            studentId,
+            classId,
+            subject,
+            date,
+            grade: grade as GradeValue,
+            type,
+            academicYear: yearLabel,
+            semester: m >= 9 ? 1 : 2,
+          })
+        }
+      }
     }
   }
   return out
@@ -80,7 +185,10 @@ interface GradeEdits {
 function loadEdits(): GradeEdits {
   try {
     const raw = JSON.parse(localStorage.getItem(EDITS_KEY) ?? '{}') as Partial<GradeEdits>
-    return { added: raw.added ?? [], updated: raw.updated ?? {}, deleted: raw.deleted ?? [] }
+    const added = raw.added ?? []
+    // Миграция: у оценок, добавленных до появления учебных периодов, нет academicYear/semester.
+    for (const g of added) if (!g.academicYear) Object.assign(g, academicInfoFor(g.date))
+    return { added, updated: raw.updated ?? {}, deleted: raw.deleted ?? [] }
   } catch {
     return { added: [], updated: {}, deleted: [] }
   }
@@ -100,19 +208,25 @@ export function getStudentGrades(studentId: string): GradeRecord[] {
   return [...base, ...added].sort((a, b) => a.date.localeCompare(b.date) || a.subject.localeCompare(b.subject))
 }
 
-export function addGrade(data: Omit<GradeRecord, 'id'>): GradeRecord {
+/** Учебный год и семестр вычисляются по дате автоматически. */
+export function addGrade(data: Omit<GradeRecord, 'id' | 'academicYear' | 'semester'>): GradeRecord {
   const edits = loadEdits()
-  const record: GradeRecord = { ...data, id: `add-${Date.now()}-${Math.floor(Math.random() * 1e6)}` }
+  const record: GradeRecord = {
+    ...data,
+    ...academicInfoFor(data.date),
+    id: `add-${Date.now()}-${Math.floor(Math.random() * 1e6)}`,
+  }
   edits.added.push(record)
   saveEdits(edits)
   return record
 }
 
 export function updateGrade(id: string, patch: Partial<Pick<GradeRecord, 'subject' | 'date' | 'grade' | 'type'>>) {
+  const full: Partial<GradeRecord> = patch.date ? { ...patch, ...academicInfoFor(patch.date) } : { ...patch }
   const edits = loadEdits()
   const added = edits.added.find((g) => g.id === id)
-  if (added) Object.assign(added, patch)
-  else edits.updated[id] = { ...(edits.updated[id] ?? {}), ...patch }
+  if (added) Object.assign(added, full)
+  else edits.updated[id] = { ...(edits.updated[id] ?? {}), ...full }
   saveEdits(edits)
 }
 

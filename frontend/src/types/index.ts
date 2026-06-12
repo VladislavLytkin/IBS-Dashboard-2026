@@ -28,11 +28,19 @@ export interface ClassInfo {
   trend: TrendDirection
 }
 
+/** Статус ученика: обучается / отчислен / переведён / выпущен. */
+export type StudentStatus = 'active' | 'withdrawn' | 'transferred' | 'graduated'
+
 export interface Student {
   id: string
   fullName: string
   classId: string
   grade: GradeLevel
+  enrollmentYear: number // год поступления в школу, напр. 2018
+  enrollmentDate: string // ISO, напр. "2018-09-01"
+  status: StudentStatus
+  exitDate: string | null // ISO, только если ученик выбыл
+  exitReason: string | null
   averageGrade: number // средний балл (по 5-балльной шкале)
   attendanceRate: number // % присутствия
   olympiadParticipation: boolean
@@ -145,10 +153,15 @@ export interface GradeRecord {
   studentId: string
   classId: string
   subject: string
-  date: string // ISO, напр. "2024-05-12"
+  date: string // ISO, напр. "2024-02-12"
   grade: GradeValue
   type: GradeType
+  academicYear: string // напр. "2023/2024"
+  semester: 1 | 2 // 1 — сентябрь–декабрь, 2 — январь–май
 }
+
+/** Период фильтрации оценок. */
+export type GradePeriod = 'year' | 'sem1' | 'sem2' | 'month' | 'all'
 
 // ===================== Волонтёрство / активность =====================
 export interface VolunteerEvent {
