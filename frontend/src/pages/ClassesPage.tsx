@@ -3,7 +3,7 @@ import type { ParallelFilterValue } from '../types'
 import { classesService } from '../services'
 import { useFilters } from '../context/FiltersContext'
 import { useApi } from '../hooks/useApi'
-import { Card, EmptyState, PageFooter, ParallelFilter, TrendArrow, scoreClass } from '../components/ui'
+import { Card, EmptyState, ParallelFilter, TrendArrow, scoreClass } from '../components/ui'
 
 export function ClassesPage() {
   const { year } = useFilters()
@@ -49,7 +49,6 @@ export function ClassesPage() {
           </div>
         )}
       </Card>
-      <PageFooter />
     </div>
   )
 }

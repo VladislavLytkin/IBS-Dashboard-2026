@@ -7,7 +7,7 @@ import { useAuth } from '../auth/AuthContext'
 import { useFilters } from '../context/FiltersContext'
 import { useApi } from '../hooks/useApi'
 import { IconInfo } from '../components/icons'
-import { Card, ComparisonTable, EmptyState, Medal, PageFooter, ParallelFilter, scoreClass } from '../components/ui'
+import { Card, ComparisonTable, EmptyState, Medal, ParallelFilter, scoreClass } from '../components/ui'
 
 export function OlympiadsPage() {
   const { user } = useAuth()
@@ -46,7 +46,6 @@ export function OlympiadsPage() {
           rejectReason={rejectReason}
           setRejectReason={setRejectReason}
         />
-        <PageFooter />
       </div>
     )
   }
@@ -116,7 +115,6 @@ export function OlympiadsPage() {
         />
       )}
 
-      <PageFooter />
     </div>
   )
 }

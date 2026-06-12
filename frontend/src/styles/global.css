@@ -261,7 +261,11 @@ ul { margin: 0; padding: 0; list-style: none; }
 .btn:hover { background: var(--th-bg); border-color: #b9c4d4; }
 .btn--ghost-blue { color: var(--blue); }
 .btn--ghost-blue:hover { background: var(--blue-soft); border-color: var(--blue); }
+.btn--danger { color: var(--red); }
+.btn--danger:hover { background: rgba(220, 53, 69, 0.08); border-color: var(--red); }
 .btn svg { width: 16px; height: 16px; }
+.row-actions { display: inline-flex; gap: 8px; }
+.row-actions .btn, .row-actions .btn-primary { padding: 5px 10px; font-size: 13px; }
 
 /* segmented toggle */
 .segment { display: inline-flex; border: 1px solid var(--border-strong); border-radius: var(--radius-sm); overflow: hidden; }
@@ -373,15 +377,6 @@ table.tbl tbody tr:hover { background: var(--th-bg); }
   border-radius: 999px; padding: 6px 14px; font-size: 13px; font-weight: 600;
 }
 
-/* footer of page */
-.page-footer {
-  margin-top: auto;
-  display: flex; align-items: center; justify-content: space-between;
-  color: var(--text-soft); font-size: 13px;
-  padding-top: 8px;
-}
-.page-footer__refresh { display: inline-flex; align-items: center; gap: 8px; }
-
 /* empty state */
 .empty {
   display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -418,6 +413,8 @@ table.tbl tbody tr:hover { background: var(--th-bg); }
   border-right: 1px solid var(--border); border-bottom: 1px solid var(--border);
 }
 .cal__cell:nth-child(7n) { border-right: none; }
+.cal__cell.is-editable { cursor: pointer; transition: background 0.12s; }
+.cal__cell.is-editable:hover { background: var(--blue-soft); }
 .cal__day { font-size: 12px; color: var(--text-muted); }
 .cal__cell.is-outside .cal__day { color: var(--text-soft); opacity: 0.6; }
 .cal__mark {

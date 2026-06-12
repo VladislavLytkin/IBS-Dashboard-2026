@@ -135,10 +135,19 @@ export interface SubjectAverage {
   average: number
 }
 
-export interface SubjectGradeRow {
+export type GradeValue = 2 | 3 | 4 | 5
+
+export type GradeType = 'Контрольная' | 'Домашняя работа' | 'Самостоятельная работа' | 'Устный ответ'
+
+/** Одна оценка ученика. Школьная шкала: 2–5. */
+export interface GradeRecord {
+  id: string
+  studentId: string
+  classId: string
   subject: string
-  weeks: (number | null)[]
-  final: number
+  date: string // ISO, напр. "2024-05-12"
+  grade: GradeValue
+  type: GradeType
 }
 
 // ===================== Волонтёрство / активность =====================
@@ -161,8 +170,9 @@ export interface MonthlyPoint {
 }
 
 // ===================== Посещаемость =====================
+/** Сводка посещаемости ученика за месяц (в учебных днях). */
 export interface AttendanceSummary {
-  totalLessons: number
+  totalDays: number
   present: number
   absent: number
   truancy: number

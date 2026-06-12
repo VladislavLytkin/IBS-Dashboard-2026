@@ -6,7 +6,7 @@ import { useAuth } from '../auth/AuthContext'
 import { YEARS } from '../context/FiltersContext'
 import { ACCENT_COLORS, BG_COLORS, useTheme, type ColorOption } from '../context/ThemeContext'
 import { GRADE_LEVELS } from '../types'
-import { Card, EmptyState, PageFooter } from '../components/ui'
+import { Card, EmptyState } from '../components/ui'
 
 /** Компактный ряд цветовых свотчей (как в DuckDuckGo): кружки с подписью-tooltip. */
 function SwatchRow({ options, value, onChange, allowReset }: {
@@ -85,7 +85,6 @@ export function SettingsPage() {
     return (
       <div className="page">
         <PersonalizationCard />
-        <PageFooter />
       </div>
     )
   }
@@ -197,7 +196,6 @@ export function SettingsPage() {
         </div>
       )}
 
-      <PageFooter />
     </div>
   )
 }

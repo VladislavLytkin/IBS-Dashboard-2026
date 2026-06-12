@@ -4,7 +4,7 @@ import { ROLES, ROLE_LABELS } from '../api/types'
 import { usersService, type UserInput } from '../services'
 import { ApiError } from '../api/client'
 import { useApi } from '../hooks/useApi'
-import { Card, EmptyState, PageFooter } from '../components/ui'
+import { Card, EmptyState } from '../components/ui'
 
 export function UsersPage() {
   const { data, loading, error, reload } = useApi(() => usersService.list(), [])
@@ -91,7 +91,6 @@ export function UsersPage() {
           </div>
         )}
       </Card>
-      <PageFooter />
     </div>
   )
 }

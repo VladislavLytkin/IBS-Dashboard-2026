@@ -1,4 +1,4 @@
-import { EmptyState, PageFooter } from '../components/ui'
+import { EmptyState } from '../components/ui'
 
 export function PlaceholderPage({ title }: { title: string }) {
   return (
@@ -7,7 +7,6 @@ export function PlaceholderPage({ title }: { title: string }) {
         <h2 className="card__title">{title}</h2>
         <EmptyState message="Раздел находится в разработке. Данные появятся здесь позже." />
       </section>
-      <PageFooter />
     </div>
   )
 }

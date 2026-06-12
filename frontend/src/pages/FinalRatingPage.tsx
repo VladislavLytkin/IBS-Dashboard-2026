@@ -5,7 +5,7 @@ import { dashboardService } from '../services'
 import { useFilters } from '../context/FiltersContext'
 import { useApi } from '../hooks/useApi'
 import { FINAL_SCORE_COMPONENTS } from '../utils/scoring'
-import { Card, EmptyState, Medal, PageFooter, ParallelFilter, scoreClass } from '../components/ui'
+import { Card, EmptyState, Medal, ParallelFilter, scoreClass } from '../components/ui'
 
 const DIST = [
   { label: 'Высокий', range: '80–100', color: '#16a34a', test: (s: number) => s >= 80 },
@@ -115,7 +115,6 @@ export function FinalRatingPage() {
         </Card>
       )}
 
-      <PageFooter />
     </div>
   )
 }

@@ -6,7 +6,7 @@ import { useAuth } from '../auth/AuthContext'
 import { useFilters } from '../context/FiltersContext'
 import { useApi } from '../hooks/useApi'
 import { IconInfo } from '../components/icons'
-import { Card, EmptyState, PageFooter, ParallelFilter, TrendArrow, scoreClass } from '../components/ui'
+import { Card, EmptyState, ParallelFilter, TrendArrow, scoreClass } from '../components/ui'
 
 export function HomePage() {
   const { user } = useAuth()
@@ -59,7 +59,6 @@ export function HomePage() {
             </div>
           </Card>
         </div>
-        <PageFooter />
         {showFormula && <RatingModal onClose={() => setShowFormula(false)} />}
       </div>
     )
@@ -99,7 +98,6 @@ export function HomePage() {
         </div>
       )}
 
-      <PageFooter />
       {showFormula && <RatingModal onClose={() => setShowFormula(false)} />}
     </div>
   )

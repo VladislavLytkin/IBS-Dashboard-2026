@@ -4,7 +4,7 @@ import { ROLE_LABELS } from '../api/types'
 import { useAuth } from '../auth/AuthContext'
 import { workflowService } from '../services'
 import { useApi } from '../hooks/useApi'
-import { Card, EmptyState, PageFooter } from '../components/ui'
+import { Card, EmptyState } from '../components/ui'
 
 const STATUS_LABEL: Record<SupportTicketStatus | 'all', string> = {
   all: 'Все статусы',
@@ -50,7 +50,6 @@ export function SupportPage() {
         )}
       </Card>
 
-      <PageFooter />
     </div>
   )
 }

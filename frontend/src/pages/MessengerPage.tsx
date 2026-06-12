@@ -4,7 +4,7 @@ import { ROLE_LABELS } from '../api/types'
 import { useAuth } from '../auth/AuthContext'
 import { workflowService } from '../services'
 import { useApi } from '../hooks/useApi'
-import { EmptyState, PageFooter } from '../components/ui'
+import { EmptyState } from '../components/ui'
 
 const TYPE_LABEL: Record<InternalMessageType | 'all', string> = {
   all: 'Все типы',
@@ -451,7 +451,6 @@ export function MessengerPage() {
       )}
 
       {toast && <div className="toast">{toast}</div>}
-      <PageFooter />
     </div>
   )
 }

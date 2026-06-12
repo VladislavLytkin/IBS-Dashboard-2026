@@ -3,7 +3,7 @@ import type { ParallelFilterValue, RiskLevel } from '../types'
 import { classesService, studentsService } from '../services'
 import { useFilters } from '../context/FiltersContext'
 import { useApi } from '../hooks/useApi'
-import { Card, EmptyState, PageFooter, ParallelFilter } from '../components/ui'
+import { Card, EmptyState, ParallelFilter } from '../components/ui'
 
 const RISK_BADGE: Record<RiskLevel, string> = {
   'высокий': 'badge badge--risk-high', 'средний': 'badge badge--risk-mid', 'низкий': 'badge badge--risk-low',
@@ -66,7 +66,6 @@ export function StudentsPage() {
           </div>
         )}
       </Card>
-      <PageFooter />
     </div>
   )
 }

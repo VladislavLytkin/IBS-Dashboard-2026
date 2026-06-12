@@ -5,7 +5,7 @@ import { useAuth } from '../auth/AuthContext'
 import { useFilters } from '../context/FiltersContext'
 import { useApi } from '../hooks/useApi'
 import { IconRisk, IconSpark } from '../components/icons'
-import { Card, EmptyState, LevelBar, PageFooter, ParallelFilter } from '../components/ui'
+import { Card, EmptyState, LevelBar, ParallelFilter } from '../components/ui'
 
 const RISK_BADGE: Record<RiskLevel, string> = {
   'высокий': 'badge badge--risk-high', 'средний': 'badge badge--risk-mid', 'низкий': 'badge badge--risk-low',
@@ -97,7 +97,6 @@ export function RisksPage() {
         </div>
       )}
 
-      <PageFooter />
     </div>
   )
 }

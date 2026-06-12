@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import type { GradeLevel, ParallelFilterValue, TrendDirection } from '../types'
 import { GRADE_LEVELS } from '../types'
-import { IconCalendar, IconChevronLeft, IconChevronRight, IconRefresh } from './icons'
+import { IconCalendar, IconChevronLeft, IconChevronRight } from './icons'
 
 /** Селект «Месяц» с иконкой календаря слева (как на дизайне). */
 export function MonthSelect({
@@ -119,17 +119,6 @@ export function Card({ title, children, className, headerRight }: {
       )}
       {children}
     </section>
-  )
-}
-
-export function PageFooter() {
-  return (
-    <footer className="page-footer">
-      <span>© 2024 Школа №123</span>
-      <span className="page-footer__refresh">
-        Данные обновлены: сегодня, 10:30 <IconRefresh width={15} height={15} />
-      </span>
-    </footer>
   )
 }
 

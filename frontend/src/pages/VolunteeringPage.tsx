@@ -8,7 +8,7 @@ import { useAuth } from '../auth/AuthContext'
 import { useApi } from '../hooks/useApi'
 import { VOLUNTEER_HOURS, VOLUNTEER_SCHOOL_DYNAMICS } from '../data/volunteering'
 import { IconCalendar } from '../components/icons'
-import { Card, EmptyState, PageFooter } from '../components/ui'
+import { Card, EmptyState } from '../components/ui'
 
 const APP_STATUS_LABEL: Record<SpdApplicationStatus, string> = {
   pending: 'На проверке',
@@ -248,7 +248,6 @@ export function VolunteeringPage() {
         </div>
       )}
 
-      <PageFooter />
     </div>
   )
 }

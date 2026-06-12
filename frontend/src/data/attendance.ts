@@ -1,73 +1,136 @@
 import type {
   AbsenceDetail,
   AttendanceDay,
+  AttendanceMark,
   AttendanceSummary,
   AttendanceTrendPoint,
 } from '../types'
-
-export const ATTENDANCE_SUMMARY: AttendanceSummary = {
-  totalLessons: 96,
-  present: 80,
-  absent: 10,
-  truancy: 6,
-}
+import { hashSeed, pick, rngFor } from '../utils/random'
+import { STUDENTS } from './students'
 
 export const ATTENDANCE_WEEKDAYS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
 
-// Календарь мая 2024 (как на дизайне). outside — день соседнего месяца.
-export const ATTENDANCE_CALENDAR: AttendanceDay[] = [
-  { day: 29, mark: 'weekend', outside: true }, { day: 30, mark: 'weekend', outside: true },
-  { day: 1, mark: 'present' }, { day: 2, mark: 'present' }, { day: 3, mark: 'present' },
-  { day: 4, mark: 'weekend' }, { day: 5, mark: 'weekend' },
+/** Русские подписи статусов — на интерфейсе только они, не present/absent/truancy. */
+export const ATTENDANCE_LABELS: Record<Exclude<AttendanceMark, 'weekend'>, string> = {
+  present: 'Присутствие',
+  absent: 'Отсутствие',
+  truancy: 'Прогулы',
+}
 
-  { day: 6, mark: 'present' }, { day: 7, mark: 'absent' }, { day: 8, mark: 'present' },
-  { day: 9, mark: 'truancy' }, { day: 10, mark: 'present' }, { day: 11, mark: 'weekend' },
-  { day: 12, mark: 'weekend' },
+// Май 2024: 1 мая — среда; выходные — сб/вс.
+const WEEKENDS = new Set([4, 5, 11, 12, 18, 19, 25, 26])
 
-  { day: 13, mark: 'present' }, { day: 14, mark: 'present' }, { day: 15, mark: 'absent' },
-  { day: 16, mark: 'present' }, { day: 17, mark: 'present' }, { day: 18, mark: 'weekend' },
-  { day: 19, mark: 'weekend' },
+/** Учебные дни мая (используются и генератором оценок). */
+export const SCHOOL_DAYS_MAY: number[] = Array.from({ length: 31 }, (_, i) => i + 1)
+  .filter((d) => !WEEKENDS.has(d))
 
-  { day: 20, mark: 'present' }, { day: 21, mark: 'truancy' }, { day: 22, mark: 'present' },
-  { day: 23, mark: 'present' }, { day: 24, mark: 'absent' }, { day: 25, mark: 'weekend' },
-  { day: 26, mark: 'weekend' },
+export const MAY_ISO = (day: number) => `2024-05-${String(day).padStart(2, '0')}`
+export const MAY_LABEL = (day: number) => `${day} мая`
 
-  { day: 27, mark: 'present' }, { day: 28, mark: 'present' }, { day: 29, mark: 'truancy' },
-  { day: 30, mark: 'present' }, { day: 31, mark: 'present' }, { day: 1, mark: 'weekend', outside: true },
-  { day: 2, mark: 'weekend', outside: true },
+// ===================== База + правки учителя =====================
+// Базовые статусы генерируются детерминированно от studentId, правки учителя
+// хранятся поверх в localStorage (по конвенции ibs-*).
+
+const EDITS_KEY = 'ibs-attendance-edits'
+
+type AttendanceEdits = Record<string, Record<number, Exclude<AttendanceMark, 'weekend'>>>
+
+function loadEdits(): AttendanceEdits {
+  try {
+    return JSON.parse(localStorage.getItem(EDITS_KEY) ?? '{}') as AttendanceEdits
+  } catch {
+    return {}
+  }
+}
+
+function attendanceRateFor(studentId: string): number {
+  const s = STUDENTS.find((x) => x.id === studentId)
+  if (s) return s.attendanceRate
+  return 84 + ((hashSeed(`att-rate:${studentId}`) % 1000) / 1000) * 13
+}
+
+function baseMark(studentId: string, day: number): Exclude<AttendanceMark, 'weekend'> {
+  const rnd = rngFor(`att:${studentId}:${day}`)
+  const rate = attendanceRateFor(studentId)
+  if (rnd() * 100 < Math.min(97, rate)) return 'present'
+  return rnd() < 0.62 ? 'absent' : 'truancy'
+}
+
+/** Статусы ученика по учебным дням мая (база + правки учителя). */
+export function getStudentMarks(studentId: string): Record<number, Exclude<AttendanceMark, 'weekend'>> {
+  const edits = loadEdits()[studentId] ?? {}
+  const out: Record<number, Exclude<AttendanceMark, 'weekend'>> = {}
+  for (const day of SCHOOL_DAYS_MAY) out[day] = edits[day] ?? baseMark(studentId, day)
+  return out
+}
+
+export function setAttendanceMark(studentId: string, day: number, mark: Exclude<AttendanceMark, 'weekend'>) {
+  const edits = loadEdits()
+  edits[studentId] = { ...(edits[studentId] ?? {}), [day]: mark }
+  localStorage.setItem(EDITS_KEY, JSON.stringify(edits))
+}
+
+// ===================== Производные представления =====================
+
+/** Календарная сетка мая 2024 (пн 29 апр — вс 2 июн) для выбранного ученика. */
+export function getStudentCalendar(studentId: string): AttendanceDay[] {
+  const marks = getStudentMarks(studentId)
+  const cells: AttendanceDay[] = [
+    { day: 29, mark: 'weekend', outside: true },
+    { day: 30, mark: 'weekend', outside: true },
+  ]
+  for (let day = 1; day <= 31; day++) {
+    cells.push({ day, mark: WEEKENDS.has(day) ? 'weekend' : marks[day] })
+  }
+  cells.push({ day: 1, mark: 'weekend', outside: true }, { day: 2, mark: 'weekend', outside: true })
+  return cells
+}
+
+/** Сводка по ученику в учебных днях. */
+export function getStudentSummary(studentId: string): AttendanceSummary {
+  const marks = Object.values(getStudentMarks(studentId))
+  return {
+    totalDays: marks.length,
+    present: marks.filter((m) => m === 'present').length,
+    absent: marks.filter((m) => m === 'absent').length,
+    truancy: marks.filter((m) => m === 'truancy').length,
+  }
+}
+
+/** Динамика по классу: доля статусов среди учеников класса на каждый учебный день. */
+export function getClassTrend(studentIds: string[]): AttendanceTrendPoint[] {
+  if (!studentIds.length) return []
+  const perStudent = studentIds.map((id) => getStudentMarks(id))
+  return SCHOOL_DAYS_MAY.map((day) => {
+    const marks = perStudent.map((m) => m[day])
+    const pct = (k: AttendanceMark) => Math.round((marks.filter((m) => m === k).length / marks.length) * 100)
+    return { label: MAY_LABEL(day), present: pct('present'), absent: pct('absent'), truancy: pct('truancy') }
+  })
+}
+
+// ===================== Детализация пропусков =====================
+
+const EXCUSED_REASONS = ['Болезнь', 'Справка от врача', 'Семейные обстоятельства', 'Соревнования']
+const ABSENCE_SUBJECTS = [
+  'Математика', 'Русский язык', 'Физика', 'Химия', 'История',
+  'Английский язык', 'Информатика', 'География', 'Биология', 'Литература',
 ]
 
-export const ATTENDANCE_TREND: AttendanceTrendPoint[] = [
-  { label: '1 мая', present: 80, absent: 18, truancy: 5 },
-  { label: '2 мая', present: 82, absent: 15, truancy: 4 },
-  { label: '3 мая', present: 85, absent: 12, truancy: 3 },
-  { label: '6 мая', present: 78, absent: 18, truancy: 6 },
-  { label: '7 мая', present: 83, absent: 14, truancy: 4 },
-  { label: '8 мая', present: 86, absent: 11, truancy: 3 },
-  { label: '13 мая', present: 84, absent: 13, truancy: 4 },
-  { label: '14 мая', present: 80, absent: 16, truancy: 5 },
-  { label: '15 мая', present: 79, absent: 18, truancy: 7 },
-  { label: '16 мая', present: 85, absent: 12, truancy: 4 },
-  { label: '20 мая', present: 87, absent: 10, truancy: 3 },
-  { label: '21 мая', present: 82, absent: 14, truancy: 6 },
-  { label: '22 мая', present: 84, absent: 13, truancy: 4 },
-  { label: '24 мая', present: 81, absent: 16, truancy: 5 },
-  { label: '27 мая', present: 86, absent: 12, truancy: 3 },
-  { label: '28 мая', present: 88, absent: 10, truancy: 3 },
-  { label: '29 мая', present: 80, absent: 15, truancy: 6 },
-  { label: '31 мая', present: 82, absent: 14, truancy: 4 },
-]
-
-export const ABSENCE_EXCUSED: AbsenceDetail[] = [
-  { date: '07.05.2024', lessons: '2', subject: 'Математика', reason: 'Болезнь' },
-  { date: '07.05.2024', lessons: '3', subject: 'Русский язык', reason: 'Болезнь' },
-  { date: '15.05.2024', lessons: '1', subject: 'История', reason: 'Справка от врача' },
-  { date: '24.05.2024', lessons: '4', subject: 'Физика', reason: 'Семейные обстоятельства' },
-  { date: '24.05.2024', lessons: '5', subject: 'Информатика', reason: 'Семейные обстоятельства' },
-]
-
-export const ABSENCE_TRUANCY: AbsenceDetail[] = [
-  { date: '09.05.2024', lessons: '2, 3', subject: 'Английский язык, Обществознание', reason: 'Без уважительной причины' },
-  { date: '21.05.2024', lessons: '1', subject: 'География', reason: 'Без уважительной причины' },
-  { date: '29.05.2024', lessons: '2, 3, 4', subject: 'Химия, Физика, Алгебра', reason: 'Без уважительной причины' },
-]
+export function getAbsenceDetails(studentId: string): { excused: AbsenceDetail[]; truancy: AbsenceDetail[] } {
+  const marks = getStudentMarks(studentId)
+  const excused: AbsenceDetail[] = []
+  const truancy: AbsenceDetail[] = []
+  for (const day of SCHOOL_DAYS_MAY) {
+    if (marks[day] === 'present') continue
+    const rnd = rngFor(`att-detail:${studentId}:${day}`)
+    const date = `${String(day).padStart(2, '0')}.05.2024`
+    const lesson = 1 + Math.floor(rnd() * 6)
+    const subject = pick(rnd, ABSENCE_SUBJECTS)
+    if (marks[day] === 'absent') {
+      excused.push({ date, lessons: String(lesson), subject, reason: pick(rnd, EXCUSED_REASONS) })
+    } else {
+      truancy.push({ date, lessons: String(lesson), subject, reason: 'Без уважительной причины' })
+    }
+  }
+  return { excused, truancy }
+}

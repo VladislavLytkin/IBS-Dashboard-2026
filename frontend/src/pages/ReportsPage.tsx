@@ -6,7 +6,7 @@ import { YEARS } from '../context/FiltersContext'
 import { GRADE_LEVELS } from '../types'
 import { useApi } from '../hooks/useApi'
 import { IconDownload } from '../components/icons'
-import { Card, EmptyState, PageFooter } from '../components/ui'
+import { Card, EmptyState } from '../components/ui'
 
 const TYPES: { value: ReportType; label: string }[] = [
   { value: 'final-rating', label: 'Итоговый рейтинг' },
@@ -111,7 +111,6 @@ export function ReportsPage() {
         )}
       </Card>
 
-      <PageFooter />
     </div>
   )
 }

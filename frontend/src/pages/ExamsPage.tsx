@@ -7,7 +7,7 @@ import { examsService } from '../services'
 import { useFilters } from '../context/FiltersContext'
 import { useApi } from '../hooks/useApi'
 import { IconInfo } from '../components/icons'
-import { Card, ComparisonTable, EmptyState, PageFooter, ParallelFilter } from '../components/ui'
+import { Card, ComparisonTable, EmptyState, ParallelFilter } from '../components/ui'
 
 export function ExamsPage() {
   const { year } = useFilters()
@@ -88,7 +88,6 @@ export function ExamsPage() {
         </>
       )}
 
-      <PageFooter />
     </div>
   )
 }

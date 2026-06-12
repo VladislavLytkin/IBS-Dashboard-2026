@@ -3,7 +3,7 @@ import { useAuth } from '../auth/AuthContext'
 import { useFilters } from '../context/FiltersContext'
 import { studentsService, workflowService } from '../services'
 import { useApi } from '../hooks/useApi'
-import { Card, EmptyState, PageFooter } from '../components/ui'
+import { Card, EmptyState } from '../components/ui'
 
 const ABSENCE_LABEL = { excused: 'Уважительное отсутствие', truancy: 'Прогул' } as const
 const DEBT_STATUS = { assigned: 'Назначена', in_progress: 'В работе', closed: 'Закрыта', overdue: 'Просрочена' } as const
@@ -113,7 +113,6 @@ export function TeachingActionsPage() {
         </Card>
       )}
 
-      <PageFooter />
     </div>
   )
 }

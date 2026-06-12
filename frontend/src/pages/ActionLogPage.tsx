@@ -1,4 +1,4 @@
-import { Card, EmptyState, PageFooter } from '../components/ui'
+import { Card, EmptyState } from '../components/ui'
 import { workflowService } from '../services'
 import { useApi } from '../hooks/useApi'
 import { ROLE_LABELS } from '../api/types'
@@ -28,7 +28,6 @@ export function ActionLogPage() {
           </div>
         )}
       </Card>
-      <PageFooter />
     </div>
   )
 }
