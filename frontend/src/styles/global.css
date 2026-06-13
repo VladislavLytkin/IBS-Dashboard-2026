@@ -267,6 +267,22 @@ ul { margin: 0; padding: 0; list-style: none; }
 .row-actions { display: inline-flex; gap: 8px; }
 .row-actions .btn, .row-actions .btn-primary { padding: 5px 10px; font-size: 13px; }
 
+/* tooltip графиков (экзамены) */
+.chart-tip {
+  background: var(--card);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  font-size: 13px;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.12);
+}
+.chart-tip__title { font-weight: 600; margin-bottom: 4px; }
+
+/* подпись источника значения (экзамены) */
+.src-note { font-size: 11px; color: var(--text-soft); margin-top: 2px; white-space: normal; }
+
+tr.is-selected td { background: var(--blue-soft); }
+
 /* segmented toggle */
 .segment { display: inline-flex; border: 1px solid var(--border-strong); border-radius: var(--radius-sm); overflow: hidden; }
 .segment button {

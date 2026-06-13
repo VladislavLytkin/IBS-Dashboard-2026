@@ -163,6 +163,67 @@ export interface GradeRecord {
 /** Период фильтрации оценок. */
 export type GradePeriod = 'year' | 'sem1' | 'sem2' | 'month' | 'all'
 
+// ===================== Экзамены ученика (вкладка в карточке) =====================
+export type StudentExamType = 'ЕГЭ' | 'ОГЭ' | 'ВПР' | 'Внутренний экзамен'
+
+export type StudentExamStatus =
+  | 'Не сдал'
+  | 'Сдал'
+  | 'Выше среднего по школе'
+  | 'Выше среднего по городу'
+  | 'Выше среднего по стране'
+
+export interface StudentExamResult {
+  id: string
+  studentId: string
+  classId: string
+  academicYear: string // напр. "2023/2024"
+  examType: StudentExamType
+  subject: string
+  examDate: string // ISO
+  score: number
+  maxScore: number
+  algebraScore: number | null // только ОГЭ по математике
+  geometryScore: number | null // только ОГЭ по математике
+  status: StudentExamStatus
+}
+
+/** Порог зачисления в профильный класс (ОГЭ по математике). */
+export interface ExamProfileThreshold {
+  profile: string
+  minTotalScore: number
+  minGeometryScore: number | null
+}
+
+/** Пороговые баллы экзамена. Каждое значение сопровождается источником (или пометкой «демо-данные»). */
+export interface ExamThreshold {
+  examType: StudentExamType
+  year: number // календарный год экзамена
+  subject: string
+  maxScore: number
+  minTotalScore: number // минимум для аттестата/сдачи (ЕГЭ/ОГЭ/ВПР)
+  minSchoolScore: number | null // внутренний экзамен: минимум, заданный правилами школы
+  minGeometryScore: number | null // ОГЭ по математике: минимум по модулю «геометрия»
+  minUniversityScore: number | null // минимум для поступления (ЕГЭ)
+  minMinobrnaukiScore: number | null // минимум вузов Минобрнауки (ЕГЭ)
+  profileThresholds: ExamProfileThreshold[] | null
+  sourceName: string
+  sourceYear: number
+  sourceUrl: string | null
+}
+
+/** Средние баллы для сравнения. schoolAverage не задаётся вручную — считается по studentExamResults. */
+export interface ExamBenchmark {
+  examType: StudentExamType
+  year: number
+  subject: string
+  schoolAverage: number | null
+  cityAverage: number | null
+  countryAverage: number | null
+  sourceName: string
+  sourceYear: number
+}
+
 // ===================== Волонтёрство / активность =====================
 export interface VolunteerEvent {
   title: string

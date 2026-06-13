@@ -20,6 +20,7 @@ const MAIN_NAV: NavItem[] = [
   { to: '/final-rating', label: 'Итоговый рейтинг', Icon: IconChart, roles: ['DIRECTOR', 'HEAD_TEACHER', 'ANALYST'] },
   { to: '/exams', label: 'Экзамены', Icon: IconExam, roles: ['DIRECTOR', 'HEAD_TEACHER', 'ANALYST'] },
   { to: '/grades', label: 'Оценки', Icon: IconGrades, roles: ['HEAD_TEACHER', 'TEACHER', 'STUDENT'] },
+  { to: '/student-exams', label: 'Экзамены ученика', Icon: IconExam, roles: ['HEAD_TEACHER', 'TEACHER', 'STUDENT'] },
   { to: '/olympiads', label: 'Олимпиады', Icon: IconOlympiad, roles: ['ADMIN', 'DIRECTOR', 'HEAD_TEACHER', 'TEACHER', 'STUDENT'] },
   { to: '/attendance', label: 'Пропуски', Icon: IconClock, roles: ['HEAD_TEACHER', 'TEACHER', 'STUDENT'] },
   { to: '/volunteering', label: 'Активность (СПД)', Icon: IconGlobe, roles: ['ADMIN', 'HEAD_TEACHER', 'TEACHER', 'STUDENT'] },

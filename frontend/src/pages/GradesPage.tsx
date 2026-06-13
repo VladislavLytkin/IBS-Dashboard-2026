@@ -152,6 +152,7 @@ export function GradesPage() {
 
   return (
     <div className="page">
+
       <div className="toolbar">
         <div className="field">
           <span className="field__label">Выберите класс:</span>
