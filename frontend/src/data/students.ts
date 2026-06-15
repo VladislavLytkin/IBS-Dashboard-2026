@@ -76,6 +76,7 @@ function buildStudents(): Student[] {
       const activityScore = round1(clampScore(cls.activityScore + between(rnd, -18, 18)))
       const olympiadParticipation = rnd() < cls.olympiadScore / 110
       const olympiadAwards = olympiadParticipation ? Math.round(between(rnd, 0, 3)) : 0
+      const hasVserosBenefit = olympiadParticipation && olympiadAwards >= 2 && cls.grade === 11
 
       // В школе 2–7 лет, но не раньше 1-го класса.
       const currentStart = getCurrentAcademicYearStart()
@@ -118,6 +119,7 @@ function buildStudents(): Student[] {
         attendanceRate,
         olympiadParticipation,
         olympiadAwards,
+        hasVserosBenefit,
         activityScore,
         riskScore,
         riskLevel,

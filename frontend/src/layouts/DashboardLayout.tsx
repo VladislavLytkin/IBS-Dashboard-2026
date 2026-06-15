@@ -17,7 +17,6 @@ const TITLES: Record<string, string> = {
   '/settings': 'Настройки',
   '/users': 'Пользователи',
   '/grades': 'Оценки (журнал)',
-  '/student-exams': 'Экзамены ученика',
   '/messenger': 'Внутренний мессенджер',
   '/support': 'Поддержка',
   '/action-log': 'Журнал действий',

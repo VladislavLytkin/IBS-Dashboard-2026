@@ -24,14 +24,14 @@ const DIAG = ['Русский язык', 'Математика', 'Английс
 const PRIMARY = ['Русский язык', 'Математика', 'Литературное чтение', 'Окружающий мир', 'Английский язык']
 
 export function examSubjectsFor(grade: number): string[] {
-  if (grade >= 10) return EGE
+  if (grade === 11) return EGE
   if (grade === 9) return OGE
   if (grade >= 5) return DIAG
   return PRIMARY
 }
 
 export function examTypeFor(grade: number): string {
-  if (grade >= 10) return 'ЕГЭ'
+  if (grade === 11) return 'ЕГЭ'
   if (grade === 9) return 'ОГЭ'
   if (grade >= 5) return 'Диагностические работы'
   return 'Базовые показатели'

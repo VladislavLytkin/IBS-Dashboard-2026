@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
-  Bar, BarChart, CartesianGrid, LabelList, Line, LineChart,
+  Bar, BarChart, CartesianGrid, Label, LabelList, Line, LineChart,
   ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts'
 import type { GradePeriod, GradeRecord, GradeType, GradeValue } from '../types'
-import { ALL_CLASSES } from '../data/classes'
 import { STUDENT_STATUS_LABELS, getStudents } from '../data/students'
+import { getVisibleClasses } from '../data/permissions'
+import { CITIES, classesInCity, getVisibleCities, type City } from '../data/cities'
 import {
   GRADE_TYPES, GRADE_VALUES, PERIOD_OPTIONS, SUBJECTS,
   addGrade, deleteGrade, filterGradesByPeriod, getAcademicMonthOptions,
@@ -38,10 +39,22 @@ function defaultDateFor(academicYear: string, period: GradePeriod, month?: strin
 export function GradesPage() {
   const { user } = useAuth()
   const canEdit = user?.role === 'TEACHER' || user?.role === 'HEAD_TEACHER' || user?.role === 'ADMIN'
+  const studentRole = user?.role === 'STUDENT'
+
+  // ----- Город (только для сотрудников) -----
+  const cities = useMemo(() => getVisibleCities(user), [user])
+  const [city, setCity] = useState(cities[0] ?? CITIES[0])
+  useEffect(() => {
+    if (cities.length && !cities.includes(city)) setCity(cities[0])
+  }, [city, cities])
+
   const visibleClasses = useMemo(() => {
-    if (user?.role === 'TEACHER' || user?.role === 'STUDENT') return (user.classIds ?? []).map((id) => id.replace(/^\d+-/, ''))
-    return ALL_CLASSES
-  }, [user])
+    const base = getVisibleClasses(user)
+    if (studentRole) return base
+    const inCity = classesInCity(city)
+    const filtered = base.filter((c) => inCity.includes(c))
+    return filtered.length ? filtered : base
+  }, [user, city, studentRole])
   const [className, setClassName] = useState(visibleClasses[0] ?? '7Б')
   useEffect(() => {
     if (visibleClasses.length && !visibleClasses.includes(className)) setClassName(visibleClasses[0])
@@ -154,6 +167,14 @@ export function GradesPage() {
     <div className="page">
 
       <div className="toolbar">
+        {!studentRole && (
+          <div className="field">
+            <span className="field__label">Город:</span>
+            <select className="select" value={city} onChange={(e) => setCity(e.target.value as City)}>
+              {cities.map((c) => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </div>
+        )}
         <div className="field">
           <span className="field__label">Выберите класс:</span>
           <select className="select" value={className} onChange={(e) => onClassChange(e.target.value)}>
@@ -235,11 +256,20 @@ export function GradesPage() {
         ) : (
           <div className="chart-box" style={{ height: 300 }}>
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={averages} margin={{ top: 24, right: 8, left: -16, bottom: 4 }}>
+              <BarChart data={averages} margin={{ top: 24, right: 8, left: 8, bottom: 28 }}>
                 <CartesianGrid vertical={false} stroke="#eef1f5" />
                 <XAxis dataKey="subject" tickLine={false} axisLine={false} interval={0}
-                  tick={{ fontSize: 11 }} angle={0} height={40} />
-                <YAxis domain={[0, 5]} ticks={[0, 1, 2, 3, 4, 5]} tickLine={false} axisLine={false} />
+                  tick={{ fontSize: 11 }} angle={0} height={48}>
+                  <Label value="Предмет" position="insideBottom" offset={-14} style={{ fontSize: 12, fill: '#64748b' }} />
+                </XAxis>
+                <YAxis domain={[0, 5]} ticks={[0, 1, 2, 3, 4, 5]} tickLine={false} axisLine={false}>
+                  <Label value="Балл" angle={-90} position="insideLeft" style={{ fontSize: 12, fill: '#64748b', textAnchor: 'middle' }} />
+                </YAxis>
+                <Tooltip
+                  cursor={{ fill: 'rgba(127, 127, 127, 0.06)' }}
+                  formatter={(v: number) => [v.toFixed(1), 'Средний балл']}
+                  labelFormatter={(l) => `Предмет: ${l}`}
+                />
                 <Bar dataKey="average" fill="var(--bar)" radius={[4, 4, 0, 0]} maxBarSize={46}>
                   <LabelList dataKey="average" position="top" fontSize={12} fill="#334155"
                     formatter={(v: number) => v.toFixed(1)} />

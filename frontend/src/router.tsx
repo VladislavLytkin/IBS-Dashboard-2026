@@ -16,7 +16,6 @@ import { ReportsPage } from './pages/ReportsPage'
 import { SettingsPage } from './pages/SettingsPage'
 import { UsersPage } from './pages/UsersPage'
 import { GradesPage } from './pages/GradesPage'
-import { StudentExamsPage } from './pages/StudentExamsPage'
 import { PlaceholderPage } from './pages/PlaceholderPage'
 import { MessengerPage } from './pages/MessengerPage'
 import { SupportPage } from './pages/SupportPage'
@@ -40,7 +39,7 @@ export const router = createBrowserRouter([
     children: [
       { index: true, element: <HomePage /> },
       { path: 'final-rating', element: <RequireRole roles={['DIRECTOR', 'HEAD_TEACHER', 'ANALYST']}><FinalRatingPage /></RequireRole> },
-      { path: 'exams', element: <RequireRole roles={['DIRECTOR', 'HEAD_TEACHER', 'ANALYST']}><ExamsPage /></RequireRole> },
+      { path: 'exams', element: <RequireRole roles={['DIRECTOR', 'HEAD_TEACHER', 'TEACHER', 'STUDENT', 'ANALYST']}><ExamsPage /></RequireRole> },
       { path: 'olympiads', element: <OlympiadsPage /> },
       { path: 'attendance', element: <RequireRole roles={['HEAD_TEACHER', 'TEACHER', 'STUDENT']}><AttendancePage /></RequireRole> },
       { path: 'volunteering', element: <RequireRole roles={['ADMIN', 'HEAD_TEACHER', 'TEACHER', 'STUDENT']}><VolunteeringPage /></RequireRole> },
@@ -57,7 +56,6 @@ export const router = createBrowserRouter([
       { path: 'settings', element: <SettingsPage /> },
       { path: 'users', element: <RequireRole roles={['ADMIN']}><UsersPage /></RequireRole> },
       { path: 'grades', element: <RequireRole roles={['HEAD_TEACHER', 'TEACHER', 'STUDENT']}><GradesPage /></RequireRole> },
-      { path: 'student-exams', element: <RequireRole roles={['HEAD_TEACHER', 'TEACHER', 'STUDENT']}><StudentExamsPage /></RequireRole> },
       { path: 'messenger', element: <MessengerPage /> },
       { path: 'support', element: <SupportPage /> },
       { path: 'action-log', element: <RequireRole roles={['ADMIN', 'DIRECTOR']}><ActionLogPage /></RequireRole> },

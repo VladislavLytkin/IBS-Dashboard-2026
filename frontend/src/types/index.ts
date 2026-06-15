@@ -45,6 +45,7 @@ export interface Student {
   attendanceRate: number // % присутствия
   olympiadParticipation: boolean
   olympiadAwards: number // число призовых мест/дипломов
+  hasVserosBenefit: boolean // льгота/условие по ВсОШ: сокращенный набор ЕГЭ
   activityScore: number // 0..100
   riskScore: number // 0..100
   riskLevel: RiskLevel

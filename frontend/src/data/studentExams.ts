@@ -20,6 +20,8 @@ const DEMO_SOURCE = { sourceName: 'демо-данные', sourceYear: 2026 }
 const EGE_THRESHOLDS: Record<string, [number, number, number]> = {
   'Русский язык': [24, 36, 40],
   'Математика': [27, 27, 39],
+  'Математика профильная': [27, 27, 39],
+  'Математика базовая': [27, 27, 39],
   'Физика': [36, 36, 39],
   'Химия': [36, 36, 39],
   'Информатика': [40, 40, 44],
@@ -123,7 +125,8 @@ export function ogeGradeFromScore(subject: string, score: number): 2 | 3 | 4 | 5
 // Средний по школе здесь всегда null: он считается по результатам учеников.
 
 const EGE_COUNTRY_AVG: Record<string, number> = {
-  'Русский язык': 64, 'Математика': 62, 'Физика': 63, 'Химия': 56, 'Информатика': 55,
+  'Русский язык': 64, 'Математика': 62, 'Математика профильная': 62, 'Математика базовая': 62,
+  'Физика': 63, 'Химия': 56, 'Информатика': 55,
   'Биология': 54, 'История': 56, 'Обществознание': 55, 'География': 55, 'Литература': 64,
   'Английский язык': 63,
 }
@@ -172,8 +175,54 @@ function pickSome<T>(rnd: () => number, items: T[], count: number): T[] {
   return out
 }
 
+function studentById(studentId: string) {
+  return STUDENTS.find((x) => x.id === studentId)
+}
+
+function mathSubjectFor(studentId: string): string {
+  const rnd = rngFor(`ege-math:${studentId}`)
+  const s = studentById(studentId)
+  const technicalTilt = abilityFor(studentId, 'Математика') >= ((s?.averageGrade ?? 3.5) - 2.7) / 2.2
+  return technicalTilt || rnd() > 0.35 ? 'Математика профильная' : 'Математика базовая'
+}
+
+function getProfileEgePool(studentId: string): string[] {
+  const rnd = rngFor(`ege-pool:${studentId}`)
+  const stem = ['Информатика', 'Физика', 'Химия']
+  const humanities = ['Обществознание', 'История', 'Литература', 'Английский язык']
+  const natural = ['Биология', 'География', 'Химия']
+  if (abilityFor(studentId, 'Математика') > abilityFor(studentId, 'Русский язык') + 0.08) return stem
+  if (rnd() > 0.55) return humanities
+  return natural
+}
+
+export function assignEgeSubjects(studentId: string): string[] {
+  const s = studentById(studentId)
+  if (!s || s.grade !== 11) return []
+  const rnd = rngFor(`ege-assignment:${studentId}`)
+  const subjectCount = s.hasVserosBenefit ? 2 : 3 + Math.floor(rnd() * 2)
+  const required = ['Русский язык', mathSubjectFor(studentId)]
+  const pool = getProfileEgePool(studentId).filter((subject) => !required.includes(subject))
+  return [...required, ...pickSome(rnd, pool, Math.max(0, subjectCount - required.length))]
+}
+
+export function assignOgeSubjects(studentId: string): string[] {
+  const s = studentById(studentId)
+  if (!s || s.grade !== 9) return []
+  const rnd = rngFor(`oge-assignment:${studentId}`)
+  return ['Русский язык', 'Математика', ...pickSome(rnd, OGE_SUBJECTS.slice(2), 2)]
+}
+
+export function getAssignedExamSubjects(studentId: string, examType: StudentExamType, academicYear?: string): string[] {
+  const currentYear = academicYearLabel(getCurrentAcademicYearStart())
+  if (academicYear && academicYear !== currentYear) return []
+  if (examType === 'ЕГЭ') return assignEgeSubjects(studentId)
+  if (examType === 'ОГЭ') return assignOgeSubjects(studentId)
+  return []
+}
+
 function abilityFor(studentId: string, subject: string): number {
-  const s = STUDENTS.find((x) => x.id === studentId)
+  const s = studentById(studentId)
   const avg = s?.averageGrade ?? 3.3 + ((hashSeed(`avg:${studentId}`) % 1000) / 1000) * 1.4
   // Тот же предметный сдвиг, что и в журнале оценок, — профиль ученика согласован.
   const offset = between(rngFor(`subj:${studentId}:${subject}`), -0.7, 0.7)
@@ -182,7 +231,7 @@ function abilityFor(studentId: string, subject: string): number {
 }
 
 function gradeLevelFor(studentId: string): number {
-  const s = STUDENTS.find((x) => x.id === studentId)
+  const s = studentById(studentId)
   return s?.grade ?? 9
 }
 
@@ -193,7 +242,7 @@ function buildRawExams(studentId: string): RawExam[] {
   const lastYearStart = enrollmentYear + years.length - 1
   const currentStart = getCurrentAcademicYearStart()
   const currentGrade = gradeLevelFor(studentId)
-  const classId = STUDENTS.find((x) => x.id === studentId)?.classId ?? studentId.replace(/-\d+$/, '')
+  const classId = studentById(studentId)?.classId ?? studentId.replace(/-\d+$/, '')
   const todayIso = new Date().toISOString().slice(0, 10)
   const dateLimit = exitDate && exitDate < todayIso ? exitDate : todayIso
   const out: RawExam[] = []
@@ -246,13 +295,13 @@ function buildRawExams(studentId: string): RawExam[] {
     }
     // ОГЭ — конец 9-го класса: русский, математика + 2 предмета по выбору.
     if (gradeInYear === 9) {
-      for (const subject of ['Русский язык', 'Математика', ...pickSome(rnd, OGE_SUBJECTS.slice(2), 2)]) {
+      for (const subject of assignOgeSubjects(studentId)) {
         push('ОГЭ', subject, `${y + 1}-05-${20 + Math.floor(rnd() * 9)}`, y, rnd)
       }
     }
-    // ЕГЭ — конец 11-го класса: русский, математика + 2 предмета по выбору.
+    // ЕГЭ — только выпускной 11-й класс: 2 предмета при льготе ВсОШ, иначе 3–4.
     if (gradeInYear === 11) {
-      for (const subject of ['Русский язык', 'Математика', ...pickSome(rnd, EGE_SUBJECTS.slice(2), 2)]) {
+      for (const subject of assignEgeSubjects(studentId)) {
         push('ЕГЭ', subject, `${y + 1}-06-0${1 + Math.floor(rnd() * 9)}`, y, rnd)
       }
     }
