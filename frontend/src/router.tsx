@@ -22,6 +22,10 @@ import { MessengerPage } from './pages/MessengerPage'
 import { SupportPage } from './pages/SupportPage'
 import { ActionLogPage } from './pages/ActionLogPage'
 import { TeachingActionsPage } from './pages/TeachingActionsPage'
+import { RiskBreakdownPage } from './pages/RiskBreakdownPage'
+import { ReviewRequestsPage } from './pages/ReviewRequestsPage'
+import { IndexBreakdownPage } from './pages/IndexBreakdownPage'
+import { DynamicsPage } from './pages/DynamicsPage'
 
 export const router = createBrowserRouter([
   { path: '/login', element: <LoginPage /> },
@@ -40,6 +44,11 @@ export const router = createBrowserRouter([
       { path: 'attendance', element: <RequireRole roles={['HEAD_TEACHER', 'TEACHER', 'STUDENT']}><AttendancePage /></RequireRole> },
       { path: 'volunteering', element: <RequireRole roles={['ADMIN', 'HEAD_TEACHER', 'TEACHER', 'STUDENT']}><VolunteeringPage /></RequireRole> },
       { path: 'risks', element: <RisksPage /> },
+      // Разделы KPI-карточек главного экрана (из синтетического датасета).
+      { path: 'risk', element: <RiskBreakdownPage /> },
+      { path: 'review-requests', element: <ReviewRequestsPage /> },
+      { path: 'index-breakdown', element: <IndexBreakdownPage /> },
+      { path: 'dynamics', element: <DynamicsPage /> },
       { path: 'students', element: <RequireRole roles={['HEAD_TEACHER', 'TEACHER']}><StudentsPage /></RequireRole> },
       { path: 'classes', element: <RequireRole roles={['DIRECTOR', 'HEAD_TEACHER', 'TEACHER']}><ClassesPage /></RequireRole> },
       { path: 'reports', element: <RequireRole roles={['DIRECTOR', 'ADMIN', 'ANALYST']}><ReportsPage /></RequireRole> },

@@ -490,6 +490,161 @@ table.tbl tbody tr:hover { background: var(--th-bg); }
 .link-blue { color: var(--blue); font-weight: 600; }
 .link-blue:hover { text-decoration: underline; }
 
+/* ===================== KPI cards (главный экран) ===================== */
+.kpi-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 124px;            /* фиксированная высота — сетка не «прыгает» */
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 18px 20px;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+.kpi-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--border-strong);
+}
+.kpi-card:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+}
+.kpi-card__label { font-size: 13px; color: var(--text-muted); padding-right: 28px; }
+.kpi-card__short {
+  margin-top: auto;
+  padding-top: 10px;
+  font-size: 12px;
+  color: var(--text-soft);
+}
+
+/* Кнопка «i»: короткий tooltip на hover (через data-tooltip) */
+.kpi-info-btn {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text-soft);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.kpi-info-btn:hover, .kpi-info-btn:focus-visible {
+  background: var(--blue-soft);
+  color: var(--blue);
+  outline: none;
+}
+/* короткий tooltip 1–2 строки */
+.kpi-info-btn::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 1000;
+  max-width: 260px;
+  width: max-content;
+  padding: 8px 10px;
+  background: var(--text);
+  color: #fff;
+  font-size: 12px;
+  line-height: 1.35;
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-md);
+  white-space: normal;
+  text-align: left;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.12s ease;
+  pointer-events: none;
+}
+.kpi-info-btn:hover::after, .kpi-info-btn:focus-visible::after {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* ===================== KPI info panel (drawer) ===================== */
+.kpi-panel-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  background: rgba(15, 23, 42, 0.35);
+  display: flex;
+  justify-content: flex-end;
+}
+.kpi-info-panel {
+  width: 400px;
+  max-width: 100%;
+  height: 100vh;
+  background: var(--card);
+  border-left: 1px solid var(--border);
+  box-shadow: var(--shadow-md);
+  padding: 24px;
+  overflow-y: auto;
+  animation: kpi-panel-in 0.18s ease;
+}
+@keyframes kpi-panel-in {
+  from { transform: translateX(24px); opacity: 0.4; }
+  to   { transform: translateX(0); opacity: 1; }
+}
+@keyframes kpi-sheet-in {
+  from { transform: translateY(24px); opacity: 0.4; }
+  to   { transform: translateY(0); opacity: 1; }
+}
+.kpi-info-panel__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.kpi-info-panel__title { font-size: 18px; font-weight: 700; margin: 0; color: var(--text); }
+.kpi-info-panel__close {
+  border: none;
+  background: transparent;
+  font-size: 26px;
+  line-height: 1;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0 4px;
+}
+.kpi-info-panel__close:hover { color: var(--text); }
+.kpi-info-panel__value { font-size: 34px; font-weight: 700; margin: 16px 0 20px; }
+.kpi-info-panel__list { margin: 0; }
+.kpi-info-panel__list dt {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--text-soft);
+  margin-top: 16px;
+}
+.kpi-info-panel__list dd {
+  margin: 6px 0 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text);
+}
+.kpi-info-panel__formula {
+  display: inline-block;
+  background: var(--th-bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 3px 8px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 13px;
+  color: var(--text);
+}
+
 /* ===================== Responsive ===================== */
 @media (max-width: 1100px) {
   .grid-2, .grid-2-wide, .grid-3 { grid-template-columns: 1fr; }
@@ -512,6 +667,17 @@ table.tbl tbody tr:hover { background: var(--th-bg); }
 }
 
 @media (max-width: 640px) {
+  /* KPI info-панель — на всю ширину, выезжает снизу (bottom sheet) */
+  .kpi-panel-backdrop { align-items: flex-end; }
+  .kpi-info-panel {
+    width: 100%;
+    height: auto;
+    max-height: 88vh;
+    border-left: none;
+    border-top-left-radius: var(--radius);
+    border-top-right-radius: var(--radius);
+    animation: kpi-sheet-in 0.2s ease;
+  }
   /* Таблицы сравнения превращаются в карточки */
   .tbl--cards thead { display: none; }
   .tbl--cards, .tbl--cards tbody, .tbl--cards tr, .tbl--cards td { display: block; width: 100% !important; }

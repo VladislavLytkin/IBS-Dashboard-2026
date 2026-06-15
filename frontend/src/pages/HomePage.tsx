@@ -7,21 +7,30 @@ import { useFilters } from '../context/FiltersContext'
 import { useApi } from '../hooks/useApi'
 import { IconInfo } from '../components/icons'
 import { Card, EmptyState, ParallelFilter, TrendArrow, scoreClass } from '../components/ui'
+import { KpiCard } from '../components/KpiCard'
+import { KpiInfoPanel } from '../components/KpiInfoPanel'
+import { loadSyntheticClasses } from '../data/syntheticDataset'
+import { buildKpiCards, calculateDashboardKpis, type KpiCardConfig } from '../data/dashboardKpis'
 
 export function HomePage() {
   const { user } = useAuth()
   const { year } = useFilters()
   const [parallel, setParallel] = useState<ParallelFilterValue>('all')
   const [showFormula, setShowFormula] = useState(false)
+  // Выбранный KPI для детальной боковой панели (null — панель закрыта).
+  const [selectedKpiInfo, setSelectedKpiInfo] = useState<KpiCardConfig | null>(null)
   const grade = parallel === 'all' ? 'all' : parallel
 
-  const summary = useApi(() => dashboardService.summary({ year, grade }), [year, grade])
   const rating = useApi(() => dashboardService.classRating({ year, grade }), [year, grade])
   const applications = useApi(() => olympiadsService.applications(), [])
   const ownRisk = useApi(() => risksService.list({ year }), [year])
   const rows = rating.data ?? []
-  const s = summary.data
-  const pendingOlympiads = (applications.data ?? []).filter((a) => a.status === 'pending').length
+
+  // KPI-карточки считаются из синтетического датасета (public/data/...csv),
+  // а не из захардкоженных значений. Фильтр по параллели применяется и здесь.
+  const synthetic = useApi(() => loadSyntheticClasses(), [])
+  const syntheticRows = (synthetic.data ?? []).filter((r) => grade === 'all' || r.grade === grade)
+  const kpiCards = buildKpiCards(calculateDashboardKpis(syntheticRows))
   const avgDelta = rows.length ? rows.reduce((sum, row) => sum + row.weeklyDelta, 0) / rows.length : 0
   const trend = avgDelta > 0.2 ? 'up' : avgDelta < -0.2 ? 'down' : 'stable'
   const strong = rows.slice(0, 3)
@@ -71,16 +80,19 @@ export function HomePage() {
         <button className="btn btn--ghost-blue toolbar__spacer" onClick={() => setShowFormula(true)}><IconInfo /> Как рассчитывается рейтинг?</button>
       </div>
 
-      <div className="grid grid-4">
-        <MiniStat label="Средний индекс школы" value={s ? s.avgFinalScore.toFixed(1) : '—'} color="green" />
-        <MiniStat label="Высокий риск" value={s ? String(s.risk.high) : '—'} color="red" />
-        <MiniStat label="Средний риск" value={s ? String(s.risk.medium) : '—'} color="orange" />
-        <MiniStat label="Заявки на проверке" value={String(pendingOlympiads)} color="purple" />
-        <MiniStat label="Посещаемость" value={s ? `${s.avgAttendance.toFixed(1)}%` : '—'} color="blue" />
-        <MiniStat label="Динамика за неделю" value={rows.length ? `${avgDelta > 0 ? '+' : ''}${avgDelta.toFixed(1)}` : '—'} color={avgDelta < 0 ? 'red' : 'green'} />
-        <MiniStat label="Классов в обзоре" value={s ? String(s.classCount) : '—'} color="blue" />
-        <MiniStat label="Учеников" value={s ? String(s.studentCount) : '—'} color="purple" />
-      </div>
+      {/* KPI-карточки: порядок по управленческому приоритету, кликабельны,
+          с легендой (значок «i»). Значения берутся из синтетического датасета. */}
+      {synthetic.loading ? (
+        <Card><EmptyState message="Загрузка показателей…" /></Card>
+      ) : synthetic.error ? (
+        <Card><EmptyState message={synthetic.error} /></Card>
+      ) : (
+        <div className="grid grid-4">
+          {kpiCards.map((card) => (
+            <KpiCard key={card.id} card={card} onInfoClick={(_e, c) => setSelectedKpiInfo(c)} />
+          ))}
+        </div>
+      )}
 
       {rating.loading ? <Card><EmptyState message="Загрузка…" /></Card> : rating.error ? <Card><EmptyState message={rating.error} /></Card> : (
         <div className="grid grid-3">
@@ -99,6 +111,7 @@ export function HomePage() {
       )}
 
       {showFormula && <RatingModal onClose={() => setShowFormula(false)} />}
+      {selectedKpiInfo && <KpiInfoPanel card={selectedKpiInfo} onClose={() => setSelectedKpiInfo(null)} />}
     </div>
   )
 }
