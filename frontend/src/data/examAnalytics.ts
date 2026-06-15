@@ -390,8 +390,8 @@ export function classVsGrade(classFacts: ExamFact[], gradeFacts: ExamFact[]): { 
 /** Распределение средних баллов учеников по корзинам (гистограмма). */
 export function scoreDistribution(facts: ExamFact[]): { range: string; count: number }[] {
   const buckets = [
-    { range: '0–50', lo: 0, hi: 50 },
-    { range: '50–60', lo: 50, hi: 60 },
+    { range: '0–40', lo: 0, hi: 40 },
+    { range: '40–60', lo: 40, hi: 60 },
     { range: '60–70', lo: 60, hi: 70 },
     { range: '70–80', lo: 70, hi: 80 },
     { range: '80–90', lo: 80, hi: 90 },

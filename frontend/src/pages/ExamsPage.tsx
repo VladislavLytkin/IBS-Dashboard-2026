@@ -24,6 +24,30 @@ const avg = (nums: number[]) => (nums.length ? nums.reduce((a, b) => a + b, 0) /
 const subjAvg = (list: ExamFact[], subject: string) =>
   round1(avg(list.filter((f) => f.subject === subject).map((f) => f.percent)))
 
+const CHART_COLORS = {
+  student: '#3B82F6',
+  classAvg: '#10B981',
+  gradeAvg: '#F59E0B',
+  bar: '#3B82F6',
+  grid: '#E5EAF2',
+  muted: '#64748B',
+}
+
+const shortSubject = (subject: string) => {
+  const map: Record<string, string> = {
+    'Русский язык': 'Русский',
+    'Математика профильная': 'Мат. профиль',
+    'Математика базовая': 'Мат. база',
+    'Английский язык': 'Английский',
+    'Обществознание': 'Общество',
+    'Информатика': 'Информ.',
+  }
+  return map[subject] ?? subject
+}
+
+const fmtValue = (value: number, unit: 'percent' | 'score' = 'percent') => `${round1(value)}${unit === 'percent' ? '%' : ''}`
+const truncateText = (text: string, max = 18) => (text.length > max ? `${text.slice(0, max)}...` : text)
+
 type Period = 'month' | 'quarter' | 'year' | 'multi'
 const PERIOD_OPTIONS: { value: Period; label: string }[] = [
   { value: 'month', label: 'Месяц' },
@@ -62,6 +86,73 @@ function KpiCard({ label, value, sub }: { label: string; value: string; sub?: st
       <div className="stat-box__label">{label}</div>
       <div className="stat-box__value" style={{ marginTop: 8 }}>{value}</div>
       {sub && <div className="stat-box__sub">{sub}</div>}
+    </div>
+  )
+}
+
+function ChartSummary({ items }: { items: { label: string; value: string; tone?: 'blue' | 'green' | 'amber' | 'red' }[] }) {
+  return (
+    <div className="chart-summary">
+      {items.map((item) => (
+        <div key={item.label} className={`chart-summary__item${item.tone ? ` chart-summary__item--${item.tone}` : ''}`}>
+          <span>{item.label}</span>
+          <strong>{item.value}</strong>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function TrendBadges({ rising, falling }: { rising: { subject: string; dynamic: number }[]; falling: { subject: string; dynamic: number }[] }) {
+  if (!rising.length && !falling.length) return null
+  return (
+    <div className="trend-badges">
+      {rising.length > 0 && <span className="trend-badges__label">Рост</span>}
+      {rising.map((t) => (
+        <span key={`up-${t.subject}`} className="trend-chip trend-chip--up">↑ {shortSubject(t.subject)} {fmtValue(t.dynamic)}</span>
+      ))}
+      {falling.length > 0 && <span className="trend-badges__label">Снижение</span>}
+      {falling.map((t) => (
+        <span key={`down-${t.subject}`} className="trend-chip trend-chip--down">↓ {shortSubject(t.subject)} {fmtValue(Math.abs(t.dynamic))}</span>
+      ))}
+    </div>
+  )
+}
+
+interface TooltipPayloadItem {
+  name?: string
+  value?: number | string
+  color?: string
+}
+
+function ChartTooltip({ active, payload, label, unit = 'percent' }: {
+  active?: boolean
+  payload?: TooltipPayloadItem[]
+  label?: string
+  unit?: 'percent' | 'score' | 'count'
+}) {
+  if (!active || !payload?.length) return null
+  return (
+    <div className="chart-tip chart-tip--rich">
+      <div className="chart-tip__title">{label}</div>
+      <div className="chart-tip__rows">
+        {payload.map((item) => (
+          <div key={`${item.name}-${item.color}`} className="chart-tip__row">
+            <span><i style={{ background: item.color }} />{item.name}</span>
+            <strong>{unit === 'count' ? item.value : `${item.value}${unit === 'percent' ? '%' : ''}`}</strong>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function ChartEmptyState() {
+  return (
+    <div className="chart-empty">
+      <strong>Недостаточно данных для динамики</strong>
+      <span>Добавьте результаты за несколько дат, чтобы увидеть изменение среднего балла.</span>
+      <em>Нужно минимум 2 контрольные точки</em>
     </div>
   )
 }
@@ -269,6 +360,14 @@ function StudentLevel({ name, studentId, view, studentFacts, classFacts, gradeFa
   const trends = useMemo(() => subjectDynamics(studentFacts), [studentFacts])
   const rising = trends.filter((t) => t.dynamic > 0)
   const falling = trends.filter((t) => t.dynamic < 0)
+  const bestSubject = bySubject[0]
+  const weakestComparedToClass = useMemo(() => {
+    if (!comparison.length) return null
+    return [...comparison].sort((a, b) => (a.student - a.classAvg) - (b.student - b.classAvg))[0]
+  }, [comparison])
+  const strongestGrowth = rising[0]
+  const classGap = round1(studentAvg - round1(avg(classFacts.map((f) => f.percent))))
+  const gradeGap = round1(studentAvg - round1(avg(gradeFacts.map((f) => f.percent))))
 
   const examRows = useMemo(() => {
     const sorted = [...studentFacts].sort((a, b) => a.examDate.localeCompare(b.examDate))
@@ -299,7 +398,7 @@ function StudentLevel({ name, studentId, view, studentFacts, classFacts, gradeFa
 
       <div className="grid grid-2">
         <Card title={`Динамика результатов: ${name}`}>
-          {dynamics.length < 2 ? <EmptyState message="Недостаточно точек для динамики (расширьте период)" /> : (
+          {dynamics.length < 2 ? <ChartEmptyState /> : (
             <DynamicsChart data={dynamics} view={view} seriesName="Балл ученика" />
           )}
         </Card>
@@ -309,26 +408,34 @@ function StudentLevel({ name, studentId, view, studentFacts, classFacts, gradeFa
       </div>
 
       <Card title="Сравнение: ученик / класс / параллель">
-        <Legend items={[['Ученик', 'var(--blue)'], ['Средний класса', 'var(--green)'], ['Средний параллели', 'var(--orange)']]} />
-        <ChartBox height={320}>
-          <BarChart data={comparison} margin={{ top: 16, right: 16, left: 8, bottom: 70 }} barGap={2}>
-            <CartesianGrid vertical={false} stroke="#eef1f5" />
-            <XAxis dataKey="subject" tickLine={false} axisLine={false} tick={{ fontSize: 10 }} angle={-25} textAnchor="end" interval={0} height={70} />
+        <ChartSummary items={[
+          { label: 'Средний балл ученика', value: fmtValue(studentAvg), tone: 'blue' },
+          { label: 'Лучший предмет', value: bestSubject ? `${shortSubject(bestSubject.subject)} · ${fmtValue(bestSubject.percent)}` : '—', tone: 'green' },
+          { label: 'Зона внимания', value: weakestComparedToClass ? `${shortSubject(weakestComparedToClass.subject)} · ${fmtValue(weakestComparedToClass.student - weakestComparedToClass.classAvg)}` : '—', tone: 'red' },
+          { label: 'Разница со средними', value: `класс ${classGap >= 0 ? '+' : ''}${fmtValue(classGap)} · параллель ${gradeGap >= 0 ? '+' : ''}${fmtValue(gradeGap)}`, tone: 'amber' },
+          { label: 'Максимальный рост', value: strongestGrowth ? `${shortSubject(strongestGrowth.subject)} · +${fmtValue(strongestGrowth.dynamic)}` : 'нет', tone: 'green' },
+        ]} />
+        <Legend items={[['Ученик', CHART_COLORS.student], ['Средний класса', CHART_COLORS.classAvg], ['Средний параллели', CHART_COLORS.gradeAvg]]} />
+        <ChartBox height={300}>
+          <BarChart data={comparison} margin={{ top: 24, right: 16, left: 0, bottom: 28 }} barGap={6} barCategoryGap={28}>
+            <CartesianGrid vertical={false} stroke={CHART_COLORS.grid} strokeDasharray="3 3" />
+            <XAxis dataKey="subject" tickFormatter={shortSubject} tickLine={false} axisLine={false} tick={{ fontSize: 12, fill: CHART_COLORS.muted }} interval={0} minTickGap={6} />
             <YAxis domain={[0, 100]} tickLine={false} axisLine={false} tick={{ fontSize: 12 }}>
               <AxisLabel value="Балл, %" axis="y" />
             </YAxis>
-            <Tooltip formatter={(v, n) => [`${v}%`, String(n)]} labelFormatter={(l) => `Предмет: ${l}`} cursor={{ fill: 'rgba(127,127,127,0.06)' }} />
-            <Bar dataKey="student" name="Ученик" fill="var(--blue)" radius={[4, 4, 0, 0]} maxBarSize={22} />
-            <Bar dataKey="classAvg" name="Средний класса" fill="var(--green)" radius={[4, 4, 0, 0]} maxBarSize={22} />
-            <Bar dataKey="gradeAvg" name="Средний параллели" fill="var(--orange)" radius={[4, 4, 0, 0]} maxBarSize={22} />
+            <Tooltip content={<ChartTooltip />} cursor={{ fill: 'rgba(248,250,252,0.75)' }} />
+            <Bar dataKey="student" name="Ученик" fill={CHART_COLORS.student} radius={[8, 8, 0, 0]} maxBarSize={24}>
+              <LabelList dataKey="student" position="top" fontSize={11} fill="#334155" formatter={(v: number) => Math.round(v)} />
+            </Bar>
+            <Bar dataKey="classAvg" name="Средний класса" fill={CHART_COLORS.classAvg} radius={[8, 8, 0, 0]} maxBarSize={24}>
+              <LabelList dataKey="classAvg" position="top" fontSize={11} fill="#334155" formatter={(v: number) => Math.round(v)} />
+            </Bar>
+            <Bar dataKey="gradeAvg" name="Средний параллели" fill={CHART_COLORS.gradeAvg} radius={[8, 8, 0, 0]} maxBarSize={24}>
+              <LabelList dataKey="gradeAvg" position="top" fontSize={11} fill="#334155" formatter={(v: number) => Math.round(v)} />
+            </Bar>
           </BarChart>
         </ChartBox>
-        {(rising.length > 0 || falling.length > 0) && (
-          <p className="text-muted" style={{ marginTop: 10, fontSize: 13 }}>
-            {rising.length > 0 && <>Рост: <span className="text-green">{rising.map((t) => t.subject).join(', ')}</span>. </>}
-            {falling.length > 0 && <>Снижение: <span className="text-red">{falling.map((t) => t.subject).join(', ')}</span>.</>}
-          </p>
-        )}
+        <TrendBadges rising={rising} falling={falling} />
       </Card>
 
       <Card title="Экзамены ученика">
@@ -406,7 +513,7 @@ function AggregateLevel({ name, isClass, view, sortByDynamic, scopeFacts, gradeF
 
       <div className="grid grid-2">
         <Card title={`Динамика среднего балла: ${name}`}>
-          {dynamics.length < 2 ? <EmptyState message="Недостаточно точек для динамики (расширьте период)" /> : (
+          {dynamics.length < 2 ? <ChartEmptyState /> : (
             <DynamicsChart data={dynamics} view={view} seriesName="Средний балл" />
           )}
         </Card>
@@ -419,33 +526,42 @@ function AggregateLevel({ name, isClass, view, sortByDynamic, scopeFacts, gradeF
         <Card title={isClass ? 'Сравнение класса со средним по параллели' : 'Сравнение классов внутри параллели'}>
           {isClass ? (
             <>
-              <Legend items={[['Класс', 'var(--green)'], ['Параллель', 'var(--orange)']]} />
-              <ChartBox>
-                <BarChart data={vsGrade} margin={{ top: 16, right: 16, left: 8, bottom: 70 }} barGap={2}>
-                  <CartesianGrid vertical={false} stroke="#eef1f5" />
-                  <XAxis dataKey="subject" tickLine={false} axisLine={false} tick={{ fontSize: 10 }} angle={-25} textAnchor="end" interval={0} height={70} />
+              <ChartSummary items={[
+                { label: 'Средний класса', value: fmtValue(scopeAvg), tone: 'green' },
+                { label: 'Средний параллели', value: fmtValue(gradeAvg), tone: 'amber' },
+                { label: 'Разница', value: `${scopeAvg - gradeAvg >= 0 ? '+' : ''}${fmtValue(round1(scopeAvg - gradeAvg))}`, tone: scopeAvg >= gradeAvg ? 'green' : 'red' },
+              ]} />
+              <Legend items={[['Класс', CHART_COLORS.classAvg], ['Параллель', CHART_COLORS.gradeAvg]]} />
+              <ChartBox height={280}>
+                <BarChart data={vsGrade} margin={{ top: 24, right: 16, left: 0, bottom: 28 }} barGap={8} barCategoryGap={30}>
+                  <CartesianGrid vertical={false} stroke={CHART_COLORS.grid} strokeDasharray="3 3" />
+                  <XAxis dataKey="subject" tickFormatter={shortSubject} tickLine={false} axisLine={false} tick={{ fontSize: 12, fill: CHART_COLORS.muted }} interval={0} />
                   <YAxis domain={[0, 100]} tickLine={false} axisLine={false} tick={{ fontSize: 12 }}>
                     <AxisLabel value="Балл, %" axis="y" />
                   </YAxis>
-                  <Tooltip formatter={(v, n) => [`${v}%`, String(n)]} labelFormatter={(l) => `Предмет: ${l}`} cursor={{ fill: 'rgba(127,127,127,0.06)' }} />
-                  <Bar dataKey="classAvg" name="Класс" fill="var(--green)" radius={[4, 4, 0, 0]} maxBarSize={22} />
-                  <Bar dataKey="gradeAvg" name="Параллель" fill="var(--orange)" radius={[4, 4, 0, 0]} maxBarSize={22} />
+                  <Tooltip content={<ChartTooltip />} cursor={{ fill: 'rgba(248,250,252,0.75)' }} />
+                  <Bar dataKey="classAvg" name="Класс" fill={CHART_COLORS.classAvg} radius={[8, 8, 0, 0]} maxBarSize={26}>
+                    <LabelList dataKey="classAvg" position="top" fontSize={11} fill="#334155" formatter={(v: number) => Math.round(v)} />
+                  </Bar>
+                  <Bar dataKey="gradeAvg" name="Параллель" fill={CHART_COLORS.gradeAvg} radius={[8, 8, 0, 0]} maxBarSize={26}>
+                    <LabelList dataKey="gradeAvg" position="top" fontSize={11} fill="#334155" formatter={(v: number) => Math.round(v)} />
+                  </Bar>
                 </BarChart>
               </ChartBox>
             </>
           ) : (
-            <ChartBox>
+            <ChartBox height={280}>
               <BarChart data={classes} margin={CHART_MARGIN}>
-                <CartesianGrid vertical={false} stroke="#eef1f5" />
-                <XAxis dataKey="className" tickLine={false} axisLine={false} tick={{ fontSize: 12 }}>
+                <CartesianGrid vertical={false} stroke={CHART_COLORS.grid} strokeDasharray="3 3" />
+                <XAxis dataKey="className" tickLine={false} axisLine={false} tick={{ fontSize: 12, fill: CHART_COLORS.muted }}>
                   <AxisLabel value="Класс" axis="x" offset={-2} />
                 </XAxis>
                 <YAxis domain={[0, 100]} tickLine={false} axisLine={false} tick={{ fontSize: 12 }}>
                   <AxisLabel value="Балл, %" axis="y" />
                 </YAxis>
-                <Tooltip formatter={(v) => [`${v}%`, 'Средний балл']} labelFormatter={(l) => `Класс: ${l}`} cursor={{ fill: 'rgba(127,127,127,0.06)' }} />
-                <Bar dataKey="avgPercent" fill="var(--green)" radius={[4, 4, 0, 0]} maxBarSize={48}>
-                  <LabelList dataKey="avgPercent" position="top" fontSize={11} />
+                <Tooltip content={<ChartTooltip />} cursor={{ fill: 'rgba(248,250,252,0.75)' }} />
+                <Bar dataKey="avgPercent" name="Средний балл" fill={CHART_COLORS.classAvg} radius={[8, 8, 0, 0]} maxBarSize={48}>
+                  <LabelList dataKey="avgPercent" position="top" fontSize={11} fill="#334155" formatter={(v: number) => Math.round(v)} />
                 </Bar>
               </BarChart>
             </ChartBox>
@@ -453,18 +569,18 @@ function AggregateLevel({ name, isClass, view, sortByDynamic, scopeFacts, gradeF
         </Card>
 
         <Card title="Распределение средних баллов учеников">
-          <ChartBox>
+          <ChartBox height={260}>
             <BarChart data={distribution} margin={CHART_MARGIN}>
-              <CartesianGrid vertical={false} stroke="#eef1f5" />
-              <XAxis dataKey="range" tickLine={false} axisLine={false} tick={{ fontSize: 12 }}>
+              <CartesianGrid vertical={false} stroke={CHART_COLORS.grid} strokeDasharray="3 3" />
+              <XAxis dataKey="range" tickLine={false} axisLine={false} tick={{ fontSize: 12, fill: CHART_COLORS.muted }}>
                 <AxisLabel value="Диапазон балла, %" axis="x" offset={-2} />
               </XAxis>
               <YAxis allowDecimals={false} tickLine={false} axisLine={false} tick={{ fontSize: 12 }}>
                 <AxisLabel value="Учеников" axis="y" />
               </YAxis>
-              <Tooltip formatter={(v) => [`${v}`, 'Учеников']} labelFormatter={(l) => `Диапазон: ${l}%`} cursor={{ fill: 'rgba(127,127,127,0.06)' }} />
-              <Bar dataKey="count" fill="var(--blue)" radius={[4, 4, 0, 0]} maxBarSize={48}>
-                <LabelList dataKey="count" position="top" fontSize={11} />
+              <Tooltip content={<ChartTooltip unit="count" />} cursor={{ fill: 'rgba(248,250,252,0.75)' }} />
+              <Bar dataKey="count" name="Учеников" fill={CHART_COLORS.student} radius={[8, 8, 0, 0]} maxBarSize={48}>
+                <LabelList dataKey="count" position="top" fontSize={11} fill="#334155" />
               </Bar>
             </BarChart>
           </ChartBox>
@@ -535,17 +651,19 @@ function DynamicsChart({ data, view, seriesName }: { data: { label: string; perc
   const key = view.unit
   const unitLabel = view.unit === 'score' ? 'Балл' : 'Балл, %'
   return (
-    <ChartBox>
-      <LineChart data={data} margin={CHART_MARGIN}>
-        <CartesianGrid vertical={false} stroke="#eef1f5" />
-        <XAxis dataKey="label" tickLine={false} axisLine={false} tick={{ fontSize: 11 }}>
+    <ChartBox height={260}>
+      <LineChart data={data} margin={{ top: 24, right: 16, left: 4, bottom: 24 }}>
+        <CartesianGrid vertical={false} stroke={CHART_COLORS.grid} strokeDasharray="3 3" />
+        <XAxis dataKey="label" tickLine={false} axisLine={false} tick={{ fontSize: 11, fill: CHART_COLORS.muted }}>
           <AxisLabel value="Период" axis="x" />
         </XAxis>
-        <YAxis domain={view.unit === 'score' ? [0, 'auto'] : [0, 100]} tickLine={false} axisLine={false} tick={{ fontSize: 12 }}>
+        <YAxis domain={view.unit === 'score' ? [0, 'auto'] : [0, 100]} tickLine={false} axisLine={false} tick={{ fontSize: 12, fill: CHART_COLORS.muted }}>
           <AxisLabel value={unitLabel} axis="y" />
         </YAxis>
-        <Tooltip formatter={(v) => [view.unit === 'score' ? `${v}` : `${v}%`, seriesName]} labelFormatter={(l) => `Период: ${l}`} />
-        <Line type="monotone" dataKey={key} name={seriesName} stroke="var(--blue)" strokeWidth={2} dot={{ r: 3 }} />
+        <Tooltip content={<ChartTooltip unit={view.unit} />} cursor={{ stroke: '#CBD5E1', strokeDasharray: '3 3' }} />
+        <Line type="monotone" dataKey={key} name={seriesName} stroke={CHART_COLORS.student} strokeWidth={2.5} dot={{ r: 3 }} activeDot={{ r: 5 }}>
+          <LabelList dataKey={key} position="top" fontSize={11} fill="#334155" formatter={(v: number) => view.unit === 'score' ? Math.round(v) : `${Math.round(v)}%`} />
+        </Line>
       </LineChart>
     </ChartBox>
   )
@@ -554,19 +672,83 @@ function DynamicsChart({ data, view, seriesName }: { data: { label: string; perc
 function SubjectBarChart({ data, view }: { data: { subject: string; percent: number; score: number }[]; view: ViewConfig }) {
   const key = view.unit
   const unitLabel = view.unit === 'score' ? 'Балл' : 'Балл, %'
+  const sorted = useMemo(() => [...data].sort((a, b) => b[key] - a[key]), [data, key])
+  const best = sorted[0]
+  const worst = sorted[sorted.length - 1]
+  const totalAverage = sorted.length ? round1(avg(sorted.map((item) => item[key]))) : 0
+  const chartData = useMemo(
+    () => sorted.map((item) => ({ ...item, shortSubject: truncateText(item.subject) })),
+    [sorted],
+  )
+  const horizontal = data.length > 6
+  const chartHeight = horizontal ? Math.max(300, chartData.length * 36 + 24) : 260
+
+  if (horizontal) {
+    return (
+      <>
+        <ChartSummary items={[
+          { label: 'Лучший предмет', value: best ? `${shortSubject(best.subject)} · ${fmtValue(best[key], view.unit)}` : '—', tone: 'blue' },
+          { label: 'Зона внимания', value: worst ? `${shortSubject(worst.subject)} · ${fmtValue(worst[key], view.unit)}` : '—', tone: 'red' },
+          { label: 'Среднее по предметам', value: fmtValue(totalAverage, view.unit), tone: 'green' },
+        ]} />
+        <ChartBox height={chartHeight}>
+          <BarChart
+            data={chartData}
+            layout="vertical"
+            margin={{ top: 8, right: 42, left: 10, bottom: 8 }}
+            barCategoryGap={10}
+          >
+            <CartesianGrid horizontal={false} stroke={CHART_COLORS.grid} strokeDasharray="3 3" />
+            <XAxis
+              type="number"
+              domain={view.unit === 'score' ? [0, 'auto'] : [0, 100]}
+              tickLine={false}
+              axisLine={false}
+              tick={{ fontSize: 12, fill: CHART_COLORS.muted }}
+            />
+            <YAxis
+              type="category"
+              dataKey="shortSubject"
+              width={132}
+              tickLine={false}
+              axisLine={false}
+              tick={{ fontSize: 12, fill: CHART_COLORS.muted }}
+            />
+            <Tooltip
+              content={({ active, payload }) => {
+                const row = payload?.[0]?.payload as typeof chartData[number] | undefined
+                return <ChartTooltip active={active} payload={payload as TooltipPayloadItem[] | undefined} label={row?.subject} unit={view.unit} />
+              }}
+              cursor={{ fill: 'rgba(248,250,252,0.75)' }}
+            />
+            <Bar dataKey={key} name={unitLabel} fill={CHART_COLORS.bar} radius={[0, 8, 8, 0]} barSize={18}>
+              <LabelList dataKey={key} position="right" fontSize={12} fill="#334155" formatter={(v: number) => view.unit === 'score' ? Math.round(v) : `${Math.round(v)}%`} />
+            </Bar>
+          </BarChart>
+        </ChartBox>
+      </>
+    )
+  }
+
   return (
-    <ChartBox>
-      <BarChart data={data} margin={CHART_MARGIN}>
-        <CartesianGrid vertical={false} stroke="#eef1f5" />
-        <XAxis dataKey="subject" tickLine={false} axisLine={false} tick={{ fontSize: 10 }} angle={-25} textAnchor="end" interval={0} height={70}>
+    <ChartBox height={260}>
+      <BarChart data={chartData} margin={{ top: 24, right: 16, left: 0, bottom: 28 }} barCategoryGap={28}>
+        <CartesianGrid vertical={false} stroke={CHART_COLORS.grid} strokeDasharray="3 3" />
+        <XAxis dataKey="subject" tickFormatter={shortSubject} tickLine={false} axisLine={false} tick={{ fontSize: 12, fill: CHART_COLORS.muted }} interval={0} minTickGap={6}>
           <AxisLabel value="Предмет" axis="x" offset={-2} />
         </XAxis>
-        <YAxis domain={view.unit === 'score' ? [0, 'auto'] : [0, 100]} tickLine={false} axisLine={false} tick={{ fontSize: 12 }}>
+        <YAxis domain={view.unit === 'score' ? [0, 'auto'] : [0, 100]} tickLine={false} axisLine={false} tick={{ fontSize: 12, fill: CHART_COLORS.muted }}>
           <AxisLabel value={unitLabel} axis="y" />
         </YAxis>
-        <Tooltip formatter={(v) => [view.unit === 'score' ? `${v}` : `${v}%`, 'Балл']} labelFormatter={(l) => `Предмет: ${l}`} cursor={{ fill: 'rgba(127,127,127,0.06)' }} />
-        <Bar dataKey={key} fill="var(--bar)" radius={[4, 4, 0, 0]} maxBarSize={40}>
-          <LabelList dataKey={key} position="top" fontSize={10} />
+        <Tooltip
+          content={({ active, payload }) => {
+            const row = payload?.[0]?.payload as typeof chartData[number] | undefined
+            return <ChartTooltip active={active} payload={payload as TooltipPayloadItem[] | undefined} label={row?.subject} unit={view.unit} />
+          }}
+          cursor={{ fill: 'rgba(248,250,252,0.75)' }}
+        />
+        <Bar dataKey={key} name="Балл" fill={CHART_COLORS.bar} radius={[8, 8, 0, 0]} maxBarSize={42}>
+          <LabelList dataKey={key} position="top" fontSize={11} fill="#334155" formatter={(v: number) => view.unit === 'score' ? Math.round(v) : `${Math.round(v)}%`} />
         </Bar>
       </BarChart>
     </ChartBox>
