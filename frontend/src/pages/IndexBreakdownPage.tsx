@@ -1,6 +1,6 @@
 import { useApi } from '../hooks/useApi'
 import { loadSyntheticClasses } from '../data/syntheticDataset'
-import { calculateDashboardKpis } from '../data/dashboardKpis'
+import { aggregateSnapshot } from '../data/dashboardKpis'
 import { Card, EmptyState } from '../components/ui'
 import { SyntheticClassTable } from '../components/SyntheticClassTable'
 
@@ -13,7 +13,7 @@ export function IndexBreakdownPage() {
   const { data, loading, error } = useApi(() => loadSyntheticClasses(), [])
   const all = data ?? []
   const rows = [...all].sort((a, b) => b.ratingScore100 - a.ratingScore100)
-  const kpis = calculateDashboardKpis(all)
+  const kpis = aggregateSnapshot(all)
 
   return (
     <div className="page">

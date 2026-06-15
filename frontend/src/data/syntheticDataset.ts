@@ -33,6 +33,7 @@ export interface SyntheticClassRow {
   riskScore100: number        // risk_score_100 — индекс риска (0..100, выше — хуже)
   riskLevel: string           // risk_level: "низкий" | "средний" | "высокий"
   riskReason: string          // risk_reason — текстовая расшифровка факторов риска
+  reviewRequired: boolean     // нужен ли ручной разбор (вычисляется из risk_score и посещаемости)
 }
 
 /** Порядок колонок в CSV (используется парсером). */
@@ -56,6 +57,8 @@ function parseRow(line: string): SyntheticClassRow {
   const cells = line.split(',')
   const get = (name: (typeof COLUMNS)[number]) => cells[COLUMNS.indexOf(name)]?.trim() ?? ''
   const num = (name: (typeof COLUMNS)[number]) => Number(get(name)) || 0
+  const riskScore = num('risk_score_100')
+  const attendance = num('attendance_pct')
   return {
     academicYear: get('academic_year'),
     className: get('class_name'),
@@ -75,9 +78,11 @@ function parseRow(line: string): SyntheticClassRow {
     ratingPlace: num('rating_place'),
     ratingGroup: get('rating_group'),
     riskProbability: num('risk_probability'),
-    riskScore100: num('risk_score_100'),
+    riskScore100: riskScore,
     riskLevel: get('risk_level'),
     riskReason: get('risk_reason'),
+    // review_required: критический риск (>=75) или низкая посещаемость (<90%).
+    reviewRequired: riskScore >= 75 || attendance < 90,
   }
 }
 

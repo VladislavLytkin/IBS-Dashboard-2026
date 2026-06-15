@@ -37,7 +37,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  const hasRole = (...roles: Role[]) => (user ? roles.includes(user.role) : false)
+  // Директор — суперпользователь: имеет доступ ко всем разделам и пунктам меню.
+  const hasRole = (...roles: Role[]) =>
+    user ? user.role === 'DIRECTOR' || roles.includes(user.role) : false
 
   return <AuthCtx.Provider value={{ user, loading, login, logout, hasRole }}>{children}</AuthCtx.Provider>
 }

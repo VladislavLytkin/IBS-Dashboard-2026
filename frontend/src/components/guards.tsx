@@ -22,6 +22,7 @@ export function RequireRole({ roles, children }: { roles: Role[]; children: Reac
   const { user, loading } = useAuth()
   if (loading) return <FullScreenLoader />
   if (!user) return <Navigate to="/login" replace />
-  if (!roles.includes(user.role)) return <Navigate to="/no-access" replace />
+  // Директор — суперпользователь: полный доступ ко всем страницам.
+  if (user.role !== 'DIRECTOR' && !roles.includes(user.role)) return <Navigate to="/no-access" replace />
   return <>{children}</>
 }

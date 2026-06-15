@@ -26,6 +26,7 @@ import { RiskBreakdownPage } from './pages/RiskBreakdownPage'
 import { ReviewRequestsPage } from './pages/ReviewRequestsPage'
 import { IndexBreakdownPage } from './pages/IndexBreakdownPage'
 import { DynamicsPage } from './pages/DynamicsPage'
+import { RequestsPage } from './pages/RequestsPage'
 
 export const router = createBrowserRouter([
   { path: '/login', element: <LoginPage /> },
@@ -47,6 +48,7 @@ export const router = createBrowserRouter([
       // Разделы KPI-карточек главного экрана (из синтетического датасета).
       { path: 'risk', element: <RiskBreakdownPage /> },
       { path: 'review-requests', element: <ReviewRequestsPage /> },
+      { path: 'requests', element: <RequestsPage /> },
       { path: 'index-breakdown', element: <IndexBreakdownPage /> },
       { path: 'dynamics', element: <DynamicsPage /> },
       { path: 'students', element: <RequireRole roles={['HEAD_TEACHER', 'TEACHER']}><StudentsPage /></RequireRole> },

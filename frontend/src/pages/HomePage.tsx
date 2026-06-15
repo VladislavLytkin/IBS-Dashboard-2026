@@ -7,18 +7,19 @@ import { useFilters } from '../context/FiltersContext'
 import { useApi } from '../hooks/useApi'
 import { IconInfo } from '../components/icons'
 import { Card, EmptyState, ParallelFilter, TrendArrow, scoreClass } from '../components/ui'
-import { KpiCard } from '../components/KpiCard'
 import { KpiInfoPanel } from '../components/KpiInfoPanel'
-import { loadSyntheticClasses } from '../data/syntheticDataset'
-import { buildKpiCards, calculateDashboardKpis, type KpiCardConfig } from '../data/dashboardKpis'
+import { DashboardSections } from '../components/DashboardSections'
+import { loadDashboardTimeseries } from '../data/syntheticTimeseries'
+import { buildSectionLegends, calculateDashboardKpis, type KpiLegend } from '../data/dashboardKpis'
+import { loadSyntheticRequests, calculateRequestKpis } from '../data/syntheticRequests'
 
 export function HomePage() {
   const { user } = useAuth()
   const { year } = useFilters()
   const [parallel, setParallel] = useState<ParallelFilterValue>('all')
   const [showFormula, setShowFormula] = useState(false)
-  // Выбранный KPI для детальной боковой панели (null — панель закрыта).
-  const [selectedKpiInfo, setSelectedKpiInfo] = useState<KpiCardConfig | null>(null)
+  // Выбранный блок для детальной боковой панели (null — панель закрыта).
+  const [selectedLegend, setSelectedLegend] = useState<KpiLegend | null>(null)
   const grade = parallel === 'all' ? 'all' : parallel
 
   const rating = useApi(() => dashboardService.classRating({ year, grade }), [year, grade])
@@ -26,11 +27,25 @@ export function HomePage() {
   const ownRisk = useApi(() => risksService.list({ year }), [year])
   const rows = rating.data ?? []
 
-  // KPI-карточки считаются из синтетического датасета (public/data/...csv),
-  // а не из захардкоженных значений. Фильтр по параллели применяется и здесь.
-  const synthetic = useApi(() => loadSyntheticClasses(), [])
-  const syntheticRows = (synthetic.data ?? []).filter((r) => grade === 'all' || r.grade === grade)
-  const kpiCards = buildKpiCards(calculateDashboardKpis(syntheticRows))
+  // KPI считаются из синтетического датасета с временной динамикой
+  // (см. syntheticTimeseries.ts), а не из захардкоженных значений.
+  const synthetic = useApi(() => loadDashboardTimeseries(), [])
+  // Фильтр по параллели применяется к каждому временному срезу.
+  const ts = synthetic.data
+  const filteredTs = ts && {
+    currentWeek: ts.currentWeek.filter((r) => grade === 'all' || r.grade === grade),
+    previousWeek: ts.previousWeek.filter((r) => grade === 'all' || r.grade === grade),
+    currentMonth: ts.currentMonth.filter((r) => grade === 'all' || r.grade === grade),
+    previousMonth: ts.previousMonth.filter((r) => grade === 'all' || r.grade === grade),
+    currentYear: ts.currentYear.filter((r) => grade === 'all' || r.grade === grade),
+    previousYear: ts.previousYear.filter((r) => grade === 'all' || r.grade === grade),
+  }
+  const kpis = filteredTs && calculateDashboardKpis(filteredTs)
+
+  // Заявки — отдельный административный поток (олимпиады, СПД), НЕ риски.
+  const requestsApi = useApi(() => loadSyntheticRequests(), [])
+  const requestKpis = requestsApi.data ? calculateRequestKpis(requestsApi.data) : null
+  const legends = kpis && requestKpis && buildSectionLegends(kpis, requestKpis)
   const avgDelta = rows.length ? rows.reduce((sum, row) => sum + row.weeklyDelta, 0) / rows.length : 0
   const trend = avgDelta > 0.2 ? 'up' : avgDelta < -0.2 ? 'down' : 'stable'
   const strong = rows.slice(0, 3)
@@ -80,19 +95,15 @@ export function HomePage() {
         <button className="btn btn--ghost-blue toolbar__spacer" onClick={() => setShowFormula(true)}><IconInfo /> Как рассчитывается рейтинг?</button>
       </div>
 
-      {/* KPI-карточки: порядок по управленческому приоритету, кликабельны,
-          с легендой (значок «i»). Значения берутся из синтетического датасета. */}
-      {synthetic.loading ? (
+      {/* Смысловые блоки дашборда: состояние школы, риски, посещаемость,
+          охват данных. Значения и динамика берутся из синтетических данных. */}
+      {synthetic.loading || requestsApi.loading ? (
         <Card><EmptyState message="Загрузка показателей…" /></Card>
       ) : synthetic.error ? (
         <Card><EmptyState message={synthetic.error} /></Card>
-      ) : (
-        <div className="grid grid-4">
-          {kpiCards.map((card) => (
-            <KpiCard key={card.id} card={card} onInfoClick={(_e, c) => setSelectedKpiInfo(c)} />
-          ))}
-        </div>
-      )}
+      ) : kpis && requestKpis && legends ? (
+        <DashboardSections kpis={kpis} requests={requestKpis} legends={legends} onShowLegend={setSelectedLegend} />
+      ) : null}
 
       {rating.loading ? <Card><EmptyState message="Загрузка…" /></Card> : rating.error ? <Card><EmptyState message={rating.error} /></Card> : (
         <div className="grid grid-3">
@@ -111,7 +122,7 @@ export function HomePage() {
       )}
 
       {showFormula && <RatingModal onClose={() => setShowFormula(false)} />}
-      {selectedKpiInfo && <KpiInfoPanel card={selectedKpiInfo} onClose={() => setSelectedKpiInfo(null)} />}
+      {selectedLegend && <KpiInfoPanel legend={selectedLegend} onClose={() => setSelectedLegend(null)} />}
     </div>
   )
 }

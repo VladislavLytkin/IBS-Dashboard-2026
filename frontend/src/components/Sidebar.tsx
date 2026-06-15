@@ -25,6 +25,7 @@ const MAIN_NAV: NavItem[] = [
   { to: '/attendance', label: 'Пропуски', Icon: IconClock, roles: ['HEAD_TEACHER', 'TEACHER', 'STUDENT'] },
   { to: '/volunteering', label: 'Активность (СПД)', Icon: IconGlobe, roles: ['ADMIN', 'HEAD_TEACHER', 'TEACHER', 'STUDENT'] },
   { to: '/risks', label: 'Риски', Icon: IconRisk, roles: ['DIRECTOR', 'HEAD_TEACHER', 'TEACHER', 'STUDENT', 'ANALYST'] },
+  { to: '/requests', label: 'Заявки', Icon: IconReport, roles: ['DIRECTOR', 'HEAD_TEACHER', 'ADMIN', 'ANALYST', 'TEACHER'] },
   { to: '/students', label: 'Ученики', Icon: IconStudent, roles: ['HEAD_TEACHER', 'TEACHER'] },
   { to: '/classes', label: 'Классы', Icon: IconUsers, roles: ['DIRECTOR', 'HEAD_TEACHER', 'TEACHER'] },
   { to: '/teaching-actions', label: 'Учебные действия', Icon: IconGrades, roles: ['TEACHER', 'HEAD_TEACHER', 'DIRECTOR'] },
