@@ -12,6 +12,7 @@ backend/         # API: Express + TS, авторизация, роли, гене
 frontend/        # SPA: React + TS + Vite, авторизация, sidebar, дашборды, отчёты
 ```
 
+
 ## Быстрый старт
 
 Нужны два терминала.
