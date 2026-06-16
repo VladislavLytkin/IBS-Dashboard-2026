@@ -23,9 +23,19 @@ function read(name: string, fallback: string): string {
   return v && v.length > 0 ? v : fallback
 }
 
+function readList(name: string, fallback: string): string[] {
+  const values = read(name, fallback)
+    .split(',')
+    .map((value) => value.trim())
+    .filter(Boolean)
+
+  return Array.from(new Set([...values, 'http://localhost:5173']))
+}
+
 export const ENV = {
   PORT: Number(read('PORT', '4000')),
   CORS_ORIGIN: read('CORS_ORIGIN', 'http://localhost:5173'),
+  CORS_ORIGINS: readList('CORS_ORIGIN', 'http://localhost:5173'),
   JWT_SECRET: read('JWT_SECRET', 'ibs-dashboard-dev-secret-change-me'),
   JWT_EXPIRES_IN: read('JWT_EXPIRES_IN', '12h'),
   DB_FILE: path.resolve(process.cwd(), read('DB_FILE', './data/store.json')),

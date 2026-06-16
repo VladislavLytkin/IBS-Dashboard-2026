@@ -39,6 +39,54 @@ npm run dev      # http://localhost:5173
 
 Базовый URL API задаётся в `frontend/.env` → `VITE_API_URL=http://localhost:4000/api`.
 
+### Локальный запуск из корня
+
+```bash
+npm run seed
+npm run dev:backend    # http://localhost:4000/api
+npm run dev:frontend   # http://localhost:5173
+```
+
+## Deployment to Render
+
+Проект подготовлен для деплоя как один Render **Web Service**: backend запускает Express API и раздаёт собранный frontend из `frontend/dist`. В production frontend обращается к API по относительному пути `/api`, поэтому после деплоя приложение работает на одной публичной ссылке Render.
+
+Команда `npm run render:build` устанавливает зависимости обеих частей, выполняет seed демо-данных, собирает frontend и backend.
+
+### Шаги
+
+1. Залейте проект на GitHub.
+2. В Render создайте новый **Web Service**.
+3. Выберите репозиторий `IBS-Dashboard-2026`.
+4. Укажите **Build Command**:
+
+```bash
+npm run render:build
+```
+
+5. Укажите **Start Command**:
+
+```bash
+npm run render:start
+```
+
+6. Добавьте env-переменные в Render:
+
+```env
+PORT=10000
+JWT_SECRET=<long-random-secret>
+JWT_EXPIRES_IN=12h
+CORS_ORIGIN=https://<your-render-service>.onrender.com
+DB_FILE=./data/store.json
+VITE_API_URL=/api
+```
+
+Render сам передаёт рабочий `PORT`, поэтому значение можно оставить на стороне Render. `JWT_SECRET` должен быть новым длинным случайным значением, не из примеров.
+
+7. После деплоя откройте публичную ссылку Render. Быстрая проверка backend: `https://<your-render-service>.onrender.com/api/health` должен вернуть JSON `{"status":"ok"}`.
+
+> Важно: прототип использует JSON-хранилище (`backend/data/store.json`). На бесплатном Render файловая система временная, поэтому данные, созданные или изменённые после запуска, могут сбрасываться при перезапуске или redeploy. Для постоянного хранения позже стоит подключить внешнюю БД или persistent disk.
+
 ## Демо-доступы для прототипа
 
 > Пароли в базе хранятся **только в виде bcrypt-хэшей**. Ниже — открытые пароли

@@ -1,6 +1,8 @@
 import express from 'express'
 import cookieParser from 'cookie-parser'
 import cors from 'cors'
+import fs from 'fs'
+import path from 'path'
 import { ENV } from './config/env'
 import { META } from './data/generate'
 import { authRouter } from './auth/routes'
@@ -19,12 +21,21 @@ import { spdRouter } from './spd/routes'
 
 export function createApp() {
   const app = express()
+  const frontendDistPath = path.resolve(__dirname, '../../frontend/dist')
+  const frontendIndexPath = path.join(frontendDistPath, 'index.html')
 
-  app.use(cors({ origin: ENV.CORS_ORIGIN, credentials: true }))
+  app.set('trust proxy', 1)
+  app.use((req, res, next) => {
+    const origin = req.get('origin')
+    const sameHostOrigin = origin ? isSameHostOrigin(origin, req.get('host')) : false
+    const allowedOrigin = origin && (sameHostOrigin || ENV.CORS_ORIGINS.includes(origin)) ? origin : false
+
+    cors({ origin: allowedOrigin, credentials: true })(req, res, next)
+  })
   app.use(express.json())
   app.use(cookieParser())
 
-  app.get('/api/health', (_req, res) => res.json({ ok: true }))
+  app.get('/api/health', (_req, res) => res.json({ status: 'ok' }))
   app.get('/api/meta', (_req, res) => res.json(META))
 
   app.use('/api/auth', authRouter)
@@ -41,7 +52,27 @@ export function createApp() {
   app.use('/api/workflow', workflowRouter)
   app.use('/api/spd', spdRouter)
 
+  app.use(express.static(frontendDistPath))
+  app.get(/^\/(?!api(?:\/|$)).*/, (_req, res, next) => {
+    if (!fs.existsSync(frontendIndexPath)) {
+      next()
+      return
+    }
+
+    res.sendFile(frontendIndexPath)
+  })
+
   app.use((_req, res) => res.status(404).json({ error: 'Маршрут не найден' }))
 
   return app
+}
+
+function isSameHostOrigin(origin: string, host?: string): boolean {
+  if (!host) return false
+
+  try {
+    return new URL(origin).host === host
+  } catch {
+    return false
+  }
 }

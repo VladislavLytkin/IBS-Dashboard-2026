@@ -17,37 +17,67 @@ const base = (p: P) => ({
 export const IconHome = (p: P) => (
   <svg {...base(p)}><path d="M3 10.5 12 4l9 6.5" /><path d="M5 9.5V20h14V9.5" /><path d="M9 20v-6h6v6" /></svg>
 )
+export const IconTrophy = (p: P) => (
+  <svg {...base(p)}><path d="M8 21h8" /><path d="M12 17v4" /><path d="M7 4h10v4a5 5 0 0 1-10 0V4Z" /><path d="M17 6h3v1a4 4 0 0 1-4 4" /><path d="M7 6H4v1a4 4 0 0 0 4 4" /></svg>
+)
 export const IconGrades = (p: P) => (
   <svg {...base(p)}><rect x="4" y="3" width="16" height="18" rx="2" /><path d="M8 8h8M8 12h8M8 16h5" /></svg>
+)
+export const IconBookCheck = (p: P) => (
+  <svg {...base(p)}><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" /><path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15Z" /><path d="m9 11 2 2 4-5" /></svg>
 )
 export const IconOlympiad = (p: P) => (
   <svg {...base(p)}><path d="M8 21h8M12 17v4" /><path d="M7 4h10v4a5 5 0 0 1-10 0V4Z" /><path d="M17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3" /></svg>
 )
+export const IconMedal = (p: P) => (
+  <svg {...base(p)}><path d="m7.5 2 4.5 7 4.5-7" /><path d="M9.5 2h5" /><circle cx="12" cy="15" r="6" /><path d="m10.2 15 1.2 1.2 2.5-2.8" /></svg>
+)
 export const IconGlobe = (p: P) => (
   <svg {...base(p)}><circle cx="12" cy="12" r="9" /><path d="M3 12h18M12 3c2.5 2.7 2.5 15.3 0 18M12 3c-2.5 2.7-2.5 15.3 0 18" /></svg>
+)
+export const IconActivity = (p: P) => (
+  <svg {...base(p)}><path d="M3 12h4l2-7 4 14 2-7h6" /></svg>
 )
 export const IconClock = (p: P) => (
   <svg {...base(p)}><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg>
 )
+export const IconCalendarX = (p: P) => (
+  <svg {...base(p)}><rect x="3" y="4" width="18" height="17" rx="2" /><path d="M3 9h18M8 2v4M16 2v4" /><path d="m10 14 4 4M14 14l-4 4" /></svg>
+)
 export const IconExam = (p: P) => (
-  <svg {...base(p)}><rect x="4" y="3" width="16" height="18" rx="2" /><path d="M8 7h8M8 11h8M8 15h4" /></svg>
+  <svg {...base(p)}><rect x="4" y="3" width="16" height="18" rx="2" /><path d="M9 3v4h6V3" /><path d="m8 14 2 2 4-5" /><path d="M16 17h1" /></svg>
 )
 export const IconChart = (p: P) => (
   <svg {...base(p)}><path d="M4 20V10M9 20V4M14 20v-7M19 20V8" /></svg>
 )
+export const IconInbox = (p: P) => (
+  <svg {...base(p)}><path d="M22 12h-5l-2 3H9l-2-3H2" /><path d="m5.5 5 13 0 3.5 7v6a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-6L5.5 5Z" /></svg>
+)
 export const IconReport = (p: P) => (
   <svg {...base(p)}><path d="M6 2h8l4 4v16H6Z" /><path d="M14 2v4h4" /><path d="M9 13h6M9 17h6" /></svg>
 )
+export const IconFileChart = (p: P) => (
+  <svg {...base(p)}><path d="M6 2h8l4 4v16H6Z" /><path d="M14 2v4h4" /><path d="M9 18v-4M12 18v-7M15 18v-2" /></svg>
+)
+export const IconListChecks = (p: P) => (
+  <svg {...base(p)}><path d="m3 7 2 2 4-4" /><path d="M11 7h10" /><path d="m3 17 2 2 4-4" /><path d="M11 17h10" /></svg>
+)
+export const IconMessages = (p: P) => (
+  <svg {...base(p)}><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4Z" /><path d="M8 9h8M8 13h5" /></svg>
+)
+export const IconHistory = (p: P) => (
+  <svg {...base(p)}><path d="M3 12a9 9 0 1 0 3-6.7" /><path d="M3 4v5h5" /><path d="M12 7v5l3 2" /></svg>
+)
 // Иконка настроек: шестерёнка как в lucide-react (Settings), тонкий штрих 1.75.
 export const IconSettings = (p: P) => (
-  <svg {...base({ strokeWidth: 1.75, ...p })}>
+  <svg {...base(p)}>
     <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2Z" />
     <circle cx="12" cy="12" r="3" />
   </svg>
 )
 // Иконка помощи/поддержки (спасательный круг) — чтобы не дублировать шестерёнку.
 export const IconHelp = (p: P) => (
-  <svg {...base({ strokeWidth: 1.75, ...p })}>
+  <svg {...base(p)}>
     <circle cx="12" cy="12" r="9" />
     <circle cx="12" cy="12" r="3.5" />
     <path d="m5.7 5.7 3.8 3.8M14.5 14.5l3.8 3.8M18.3 5.7l-3.8 3.8M9.5 14.5l-3.8 3.8" />
@@ -95,8 +125,17 @@ export const IconSpark = (p: P) => (
 export const IconUsers = (p: P) => (
   <svg {...base(p)}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8" /></svg>
 )
+export const IconUsersRound = (p: P) => (
+  <svg {...base(p)}><circle cx="9" cy="8" r="4" /><path d="M3 21v-1a6 6 0 0 1 12 0v1" /><circle cx="17" cy="9" r="3" /><path d="M17 16a5 5 0 0 1 4 5" /></svg>
+)
 export const IconStudent = (p: P) => (
   <svg {...base(p)}><path d="M22 10 12 5 2 10l10 5 10-5Z" /><path d="M6 12v5c0 1 2.7 3 6 3s6-2 6-3v-5" /></svg>
+)
+export const IconUserRound = (p: P) => (
+  <svg {...base(p)}><circle cx="12" cy="8" r="5" /><path d="M4 21a8 8 0 0 1 16 0" /></svg>
+)
+export const IconUserCog = (p: P) => (
+  <svg {...base(p)}><circle cx="10" cy="8" r="4" /><path d="M3 21a7 7 0 0 1 10-6.3" /><circle cx="18" cy="17" r="2" /><path d="M18 13v1M18 20v1M14.5 15l.9.5M20.6 18.5l.9.5M14.5 19l.9-.5M20.6 15.5l.9-.5" /></svg>
 )
 export const IconLogout = (p: P) => (
   <svg {...base(p)}><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><path d="m16 17 5-5-5-5M21 12H9" /></svg>

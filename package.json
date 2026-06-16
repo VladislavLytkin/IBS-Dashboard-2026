@@ -1,0 +1,19 @@
+{
+  "name": "ibs-dashboard-2026",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "install:frontend": "npm --prefix frontend ci --include=dev",
+    "install:backend": "npm --prefix backend ci --include=dev",
+    "build:frontend": "npm --prefix frontend run build",
+    "build:backend": "npm --prefix backend run build",
+    "render:build": "npm run install:frontend && npm run install:backend && npm run seed && npm run build:frontend && npm run build:backend",
+    "render:start": "npm --prefix backend run start",
+    "dev:frontend": "npm --prefix frontend run dev",
+    "dev:backend": "npm --prefix backend run dev",
+    "seed": "npm --prefix backend run seed"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
