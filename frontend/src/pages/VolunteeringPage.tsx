@@ -1,4 +1,4 @@
-import { useMemo, useState, type FormEvent } from 'react'
+import { useMemo, useState, type ChangeEvent, type FormEvent } from 'react'
 import {
   CartesianGrid, Line, LineChart, ResponsiveContainer, XAxis, YAxis, LabelList,
 } from 'recharts'
@@ -130,7 +130,11 @@ export function VolunteeringPage() {
           <span className="field__label">Период:</span>
           <div className="select-icon">
             <IconCalendar width={16} height={16} />
-            <select className="select select--with-icon" value={periodId} onChange={(e) => setPeriodId(e.target.value)}>
+            <select
+              className="select select--with-icon"
+              value={periodId}
+              onChange={(e: ChangeEvent<HTMLSelectElement>) => setPeriodId(e.target.value)}
+            >
               <option value="all">Все периоды</option>
               {periods.map((p) => <option key={p.id} value={p.id}>{p.label}</option>)}
             </select>
@@ -278,14 +282,24 @@ function StudentSpdForm({ events, onCreated }: { events: SpdEvent[]; onCreated: 
       <form className="form-grid form-grid--single" onSubmit={submit}>
         <label className="setting-field">
           <span className="field__label">Событие СПД</span>
-          <select className="select" required value={eventId} onChange={(e) => setEventId(e.target.value)}>
+          <select
+            className="select"
+            required
+            value={eventId}
+            onChange={(e: ChangeEvent<HTMLSelectElement>) => setEventId(e.target.value)}
+          >
             <option value="">Выберите событие</option>
             {events.map((e) => <option key={e.id} value={e.id}>{e.title} · {fmtDate(e.date)} · {e.hours} ч</option>)}
           </select>
         </label>
         <label className="setting-field">
           <span className="field__label">Комментарий (необязательно)</span>
-          <textarea className="input textarea" value={comment} onChange={(e) => setComment(e.target.value)} placeholder="Чем хотите помочь, пожелания по задачам…" />
+          <textarea
+            className="input textarea"
+            value={comment}
+            onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setComment(e.target.value)}
+            placeholder="Чем хотите помочь, пожелания по задачам…"
+          />
         </label>
         <div className="flex" style={{ gap: 12 }}>
           <button className="btn-primary" type="submit" disabled={!eventId}>Отправить заявку</button>
@@ -342,7 +356,12 @@ function ApplicationsTable({ rows, loading, eventById, canReview, onReload, show
                         <button className="btn" onClick={() => setRejectingId(a.id)}>Отклонить</button>
                         {rejectingId === a.id && (
                           <div className="reject-box">
-                            <input className="input" placeholder="Причина отклонения" value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} />
+                            <input
+                              className="input"
+                              placeholder="Причина отклонения"
+                              value={rejectReason}
+                              onChange={(e: ChangeEvent<HTMLInputElement>) => setRejectReason(e.target.value)}
+                            />
                             <button className="btn-primary" onClick={async () => { await spdService.reviewApplication(a.id, 'rejected', rejectReason); setRejectingId(null); setRejectReason(''); onReload() }}>Сохранить</button>
                           </div>
                         )}
