@@ -78,8 +78,8 @@ export function OlympiadsPage() {
           {rating.loading ? <EmptyState message="Загрузка…" /> : rating.error ? <EmptyState message={rating.error} /> : ranking.length === 0 ? (
             <EmptyState message="Нет данных за выбранный период." />
           ) : (
-            <div className="table-wrap">
-              <table className="tbl tbl--compact">
+            <div className="table-wrap table-wrap--olympiad-rating">
+              <table className="tbl tbl--compact olympiad-rating-table">
                 <thead>
                   <tr><th className="td-num">Место</th><th>Класс</th><th className="td-num">Участие</th><th className="td-num">Призёры</th><th className="td-num">Индекс</th></tr>
                 </thead>
