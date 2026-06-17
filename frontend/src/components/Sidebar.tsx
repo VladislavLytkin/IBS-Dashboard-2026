@@ -89,7 +89,7 @@ export function Sidebar({ open, collapsed, onToggleCollapse, onNavigate }: Sideb
           </button>
         </div>
 
-        <nav className="sidebar__nav">
+        <nav className="sidebar__nav no-scrollbar">
           {MAIN_NAV.map(renderLink)}
           <div className="sidebar__divider" />
           {SECONDARY_NAV.map(renderLink)}
