@@ -157,7 +157,7 @@ export function ComparisonTable({
 }) {
   if (!rows.length) return <EmptyState message={emptyMessage} />
   return (
-    <div className="table-wrap">
+    <div className="table-wrap table-wrap--comparison">
       <table className="tbl tbl--compact tbl--cards cmp">
         <thead>
           <tr>

@@ -714,10 +714,36 @@ table.tbl tbody tr:hover { background: var(--th-bg); }
   box-shadow: 0 3px 8px rgba(37, 99, 235, 0.25);
 }
 
-/* таблица сравнения: длинные названия предметов переносятся аккуратно */
-.cmp { table-layout: fixed; }
-.cmp th:first-child, .cmp td:first-child { width: 28%; }
-.cmp th:not(:first-child), .cmp td:not(:first-child) { width: 24%; }
+/* таблица сравнения: помещается в карточку без горизонтального scroll */
+.table-wrap--comparison { overflow-x: hidden; }
+.table-wrap--comparison .cmp {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  table-layout: fixed;
+}
+.table-wrap--comparison .cmp th,
+.table-wrap--comparison .cmp td {
+  padding: 9px 10px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.table-wrap--comparison .cmp th:first-child,
+.table-wrap--comparison .cmp td:first-child { width: 46%; }
+.table-wrap--comparison .cmp th:not(:first-child),
+.table-wrap--comparison .cmp td:not(:first-child) {
+  width: 18%;
+  text-align: center;
+}
+.table-wrap--comparison .cmp .mini {
+  justify-content: center;
+  gap: 6px;
+}
+.table-wrap--comparison .cmp .mini__val { min-width: 38px; }
+.table-wrap--comparison .cmp .mini__track {
+  min-width: 24px;
+  max-width: 54px;
+}
 .cmp__subject { white-space: normal; word-break: break-word; line-height: 1.3; }
 
 .stat-box__value--blue { color: var(--blue); }
