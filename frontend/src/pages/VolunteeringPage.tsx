@@ -211,8 +211,8 @@ export function VolunteeringPage() {
               <button className={scope === 'year' ? 'is-active' : ''} onClick={() => setScope('year')}>За год</button>
             </div>
           }>
-            <div className="table-wrap">
-              <table className="tbl tbl--compact">
+            <div className="table-wrap table-wrap--student-hours">
+              <table className="tbl tbl--compact student-hours-table">
                 <thead>
                   <tr>
                     <th>№</th><th>Ученик</th><th>Класс</th>

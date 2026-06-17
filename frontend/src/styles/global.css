@@ -779,6 +779,35 @@ table.tbl tbody tr:hover { background: var(--th-bg); }
   min-width: 0;
 }
 
+/* сумма часов по ученикам: 5 колонок в пределах карточки */
+.table-wrap--student-hours { overflow-x: hidden; }
+.student-hours-table {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  table-layout: fixed;
+}
+.student-hours-table th,
+.student-hours-table td {
+  padding: 9px 10px;
+  overflow-wrap: anywhere;
+  text-align: center;
+  white-space: normal;
+}
+.student-hours-table th:nth-child(1),
+.student-hours-table td:nth-child(1) { width: 8%; }
+.student-hours-table th:nth-child(2),
+.student-hours-table td:nth-child(2) {
+  width: 38%;
+  text-align: left;
+}
+.student-hours-table th:nth-child(3),
+.student-hours-table td:nth-child(3) { width: 16%; }
+.student-hours-table th:nth-child(4),
+.student-hours-table td:nth-child(4),
+.student-hours-table th:nth-child(5),
+.student-hours-table td:nth-child(5) { width: 19%; }
+
 .stat-box__value--blue { color: var(--blue); }
 .stat-box__value--green { color: var(--green); }
 .stat-box__value--orange { color: var(--orange); }
