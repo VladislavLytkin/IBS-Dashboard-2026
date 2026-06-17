@@ -102,7 +102,7 @@ export function DashboardSections({ kpis, requests, legends, onShowLegend }: {
     <div className="dash-sections">
       {/* ---- Блок 1. Общее состояние школы ---- */}
       <section
-        className="dash-block dash-block--clickable dash-block--span2"
+        className="dash-block dash-block--clickable dash-block--span2 dash-block--school"
         role="button"
         tabIndex={0}
         aria-label={`Индекс школы ${kpis.schoolIndex.toFixed(1)}. Открыть разбор.`}
@@ -124,7 +124,7 @@ export function DashboardSections({ kpis, requests, legends, onShowLegend }: {
       </section>
 
       {/* ---- Блок 2. Риски (только ученики, без заявок) ---- */}
-      <section className="dash-block">
+      <section className="dash-block dash-block--risks">
         <SectionHead title="Риски" tooltip="Ученики, требующие внимания: высокий и средний риск" onInfo={() => onShowLegend(legends['risks'])} />
         <p className="dash-block__hint dash-block__hint--top">
           Показатели рассчитываются на основе интегрального risk_score учеников. Заявки сюда не входят.
@@ -138,7 +138,7 @@ export function DashboardSections({ kpis, requests, legends, onShowLegend }: {
       </section>
 
       {/* ---- Блок 3. Заявки (административные, не риски) ---- */}
-      <section className="dash-block">
+      <section className="dash-block dash-block--requests">
         <SectionHead title="Заявки" tooltip="Заявки по олимпиадам и СПД-проектам" onInfo={() => onShowLegend(legends['requests'])} />
         <MetricRow label="Заявок на проверку" value={String(requests.reviewRequestsCount)} color="purple" href="/requests">
           <DeltaText value={requests.reviewRequestsWeeklyDelta} period="за неделю" positiveIsGood={false} />
@@ -153,7 +153,7 @@ export function DashboardSections({ kpis, requests, legends, onShowLegend }: {
 
       {/* ---- Блок 4. Посещаемость ---- */}
       <section
-        className="dash-block dash-block--clickable"
+        className="dash-block dash-block--clickable dash-block--attendance"
         role="button"
         tabIndex={0}
         aria-label={`Посещаемость ${kpis.attendanceRate.toFixed(1)} процентов. Открыть раздел.`}
@@ -166,9 +166,9 @@ export function DashboardSections({ kpis, requests, legends, onShowLegend }: {
         <p className="dash-block__hint">Средняя посещаемость за выбранный период</p>
       </section>
 
-      {/* ---- Блок 5. Охват данных ---- */}
-      <section className="dash-block">
-        <SectionHead title="Охват данных" tooltip="Сколько учеников и классов участвуют в расчёте" onInfo={() => onShowLegend(legends['coverage'])} />
+      {/* ---- Блок 5. Численность учеников школы ---- */}
+      <section className="dash-block dash-block--students">
+        <SectionHead title="Численность учеников школы" tooltip="Сколько учеников и классов участвуют в расчёте" onInfo={() => onShowLegend(legends['coverage'])} />
         <div className="metric-list">
           <MetricRow label="Учеников в расчёте" value={String(kpis.studentsCount)} color="purple" href="/students">
             <DeltaText value={kpis.studentsYearlyDelta} period="за год" />

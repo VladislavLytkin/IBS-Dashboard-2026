@@ -120,6 +120,14 @@ ul { margin: 0; padding: 0; list-style: none; }
   overflow-x: hidden;
 }
 
+.page--home {
+  padding: 16px 28px 18px;
+  gap: 14px;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+.page--home::-webkit-scrollbar { display: none; }
+
 /* ===================== Sidebar ===================== */
 .sidebar {
   position: fixed;
@@ -151,7 +159,15 @@ ul { margin: 0; padding: 0; list-style: none; }
 .sidebar__brand-title { font-weight: 700; font-size: 15px; line-height: 1.2; }
 .sidebar__brand-sub { font-size: 12px; color: var(--sidebar-text-muted); }
 
-.sidebar__nav { padding: 8px 12px; display: flex; flex-direction: column; gap: 2px; overflow-y: auto; }
+.sidebar__nav {
+  padding: 8px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+.sidebar__nav::-webkit-scrollbar { display: none; }
 
 .sidebar__link {
   position: relative;
@@ -220,7 +236,7 @@ ul { margin: 0; padding: 0; list-style: none; }
   position: sticky;
   top: 0;
   z-index: 30;
-  height: 72px;
+  height: 64px;
   width: 100%;
   max-width: 100%;
   min-width: 0;
@@ -237,7 +253,7 @@ ul { margin: 0; padding: 0; list-style: none; }
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 24px;
+  font-size: 22px;
   font-weight: 700;
   color: var(--text);
 }
@@ -718,6 +734,11 @@ table.tbl tbody tr:hover { background: var(--th-bg); }
   padding: 18px 20px;
 }
 .dash-block--span2 { grid-column: span 2; }
+.dash-block--school { order: 1; }
+.dash-block--attendance { order: 2; }
+.dash-block--students { order: 3; }
+.dash-block--risks { order: 4; }
+.dash-block--requests { order: 5; }
 .dash-block--clickable { cursor: pointer; transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease; }
 .dash-block--clickable:hover {
   transform: translateY(-2px);
@@ -751,7 +772,7 @@ table.tbl tbody tr:hover { background: var(--th-bg); }
 .delta--flat { color: var(--text-muted); }
 .delta--none { color: var(--text-soft); font-weight: 400; font-size: 12px; }
 
-/* Строки-метрики внутри блоков «Риски» и «Охват данных» */
+/* Строки-метрики внутри блоков «Риски» и «Численность учеников школы» */
 .metric-list { display: flex; flex-direction: column; gap: 8px; }
 .metric-row {
   display: grid;
@@ -770,6 +791,16 @@ table.tbl tbody tr:hover { background: var(--th-bg); }
 .metric-row__label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; color: var(--text); }
 .metric-row__value { font-size: 22px; font-weight: 700; line-height: 1; }
 .metric-row__delta { min-width: 120px; text-align: right; }
+
+.page--home .dash-sections { gap: 14px; }
+.page--home .dash-block { padding: 14px 18px; }
+.page--home .section-head { margin-bottom: 8px; }
+.page--home .dash-block__hint { margin-top: 6px; }
+.page--home .dash-block__hint--top { margin: 0 0 10px; }
+.page--home .school-state__value { font-size: 30px; margin: 2px 0 6px; }
+.page--home .metric-list { gap: 7px; }
+.page--home .metric-row { padding: 8px 10px; }
+.page--home .metric-row__value { font-size: 20px; }
 
 /* Кнопка «i»: короткий tooltip на hover (через data-tooltip) */
 .kpi-info-btn {

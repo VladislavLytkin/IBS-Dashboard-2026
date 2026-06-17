@@ -1,12 +1,12 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import type { ParallelFilterValue } from '../types'
-import { dashboardService, olympiadsService, risksService } from '../services'
+import { olympiadsService, risksService } from '../services'
 import { useAuth } from '../auth/AuthContext'
 import { useFilters } from '../context/FiltersContext'
 import { useApi } from '../hooks/useApi'
 import { IconInfo } from '../components/icons'
-import { Card, EmptyState, ParallelFilter, TrendArrow, scoreClass } from '../components/ui'
+import { Card, EmptyState, ParallelFilter } from '../components/ui'
 import { KpiInfoPanel } from '../components/KpiInfoPanel'
 import { DashboardSections } from '../components/DashboardSections'
 import { loadDashboardTimeseries } from '../data/syntheticTimeseries'
@@ -22,10 +22,8 @@ export function HomePage() {
   const [selectedLegend, setSelectedLegend] = useState<KpiLegend | null>(null)
   const grade = parallel === 'all' ? 'all' : parallel
 
-  const rating = useApi(() => dashboardService.classRating({ year, grade }), [year, grade])
   const applications = useApi(() => olympiadsService.applications(), [])
   const ownRisk = useApi(() => risksService.list({ year }), [year])
-  const rows = rating.data ?? []
 
   // KPI считаются из синтетического датасета с временной динамикой
   // (см. syntheticTimeseries.ts), а не из захардкоженных значений.
@@ -46,16 +44,11 @@ export function HomePage() {
   const requestsApi = useApi(() => loadSyntheticRequests(), [])
   const requestKpis = requestsApi.data ? calculateRequestKpis(requestsApi.data) : null
   const legends = kpis && requestKpis && buildSectionLegends(kpis, requestKpis)
-  const avgDelta = rows.length ? rows.reduce((sum, row) => sum + row.weeklyDelta, 0) / rows.length : 0
-  const trend = avgDelta > 0.2 ? 'up' : avgDelta < -0.2 ? 'down' : 'stable'
-  const strong = rows.slice(0, 3)
-  const problem = [...rows].sort((a, b) => a.finalScore - b.finalScore).slice(0, 3)
-  const quickActions = getQuickActions(user?.role)
-
   if (user?.role === 'STUDENT') {
     // Берём риски строго по studentId профиля, а не первый элемент массива.
     const risk = (ownRisk.data ?? []).find((r) => r.studentId === user.studentId) ?? ownRisk.data?.[0]
     const apps = applications.data ?? []
+    const quickActions = getQuickActions(user.role)
     return (
       <div className="page">
         <div className="toolbar">
@@ -89,7 +82,7 @@ export function HomePage() {
   }
 
   return (
-    <div className="page">
+    <div className="page page--home">
       <div className="toolbar">
         <ParallelFilter value={parallel} onChange={setParallel} />
         <button className="btn btn--ghost-blue toolbar__spacer" onClick={() => setShowFormula(true)}><IconInfo /> Как рассчитывается рейтинг?</button>
@@ -105,22 +98,6 @@ export function HomePage() {
         <DashboardSections kpis={kpis} requests={requestKpis} legends={legends} onShowLegend={setSelectedLegend} />
       ) : null}
 
-      {rating.loading ? <Card><EmptyState message="Загрузка…" /></Card> : rating.error ? <Card><EmptyState message={rating.error} /></Card> : (
-        <div className="grid grid-3">
-          <TopClasses title="Проблемные классы" rows={problem} muted="Низкий индекс, проверьте пропуски и оценки" />
-          <TopClasses title="Сильные классы" rows={strong} muted="Лучшие показатели за выбранный период" />
-          <Card title="Быстрые действия">
-            <div className="quick-actions">
-              {quickActions.map((a) => <Link key={a.to} to={a.to} className="quick-action">{a.label}</Link>)}
-            </div>
-            <div className="note note--blue" style={{ marginTop: 14 }}>
-              <TrendArrow trend={trend} delta={avgDelta} />
-              <span>Средняя динамика по выбранной группе относительно прошлой недели.</span>
-            </div>
-          </Card>
-        </div>
-      )}
-
       {showFormula && <RatingModal onClose={() => setShowFormula(false)} />}
       {selectedLegend && <KpiInfoPanel legend={selectedLegend} onClose={() => setSelectedLegend(null)} />}
     </div>
@@ -135,24 +112,6 @@ function MiniStat({ label, value, color }: {
       <div className="stat-box__label">{label}</div>
       <div className={`stat-box__value stat-box__value--${color}`} style={{ marginTop: 8 }}>{value}</div>
     </div>
-  )
-}
-
-function TopClasses({ title, rows, muted }: { title: string; rows: { id: string; name: string; finalScore: number; trend: 'up' | 'down' | 'stable'; weeklyDelta: number }[]; muted: string }) {
-  return (
-    <Card title={title}>
-      <div className="class-list">
-        {rows.map((row, i) => (
-          <div className="class-list__row" key={row.id}>
-            <span className="class-list__place">{i + 1}</span>
-            <span className="class-list__name">{row.name}</span>
-            <span className={scoreClass(row.finalScore)}>{row.finalScore.toFixed(1)}</span>
-            <TrendArrow trend={row.trend} delta={row.weeklyDelta} />
-          </div>
-        ))}
-      </div>
-      <p className="text-muted" style={{ margin: '12px 0 0' }}>{muted}</p>
-    </Card>
   )
 }
 

@@ -211,7 +211,7 @@ export function buildSectionLegends(kpis: DashboardKpis, requests: RequestKpis):
     },
     'coverage': {
       id: 'coverage',
-      title: 'Охват данных',
+      title: 'Численность учеников школы',
       valueSummary: `учеников: ${kpis.studentsCount} · классов: ${kpis.classesCount}`,
       color: 'purple',
       href: '/students',
