@@ -20,6 +20,7 @@ const EXAM_GRADES = [5, 6, 7, 8, 9, 10, 11]
 const formatDate = (iso: string) => iso.split('-').reverse().join('.')
 const gradeOfClass = (className: string) => parseInt(className, 10)
 const localStudentId = (id?: string) => id?.replace(/^\d+-/, '').replace(/-s(\d+)$/, '-$1')
+const localClassId = (id?: string) => id?.replace(/^\d+-/, '') ?? ''
 const avg = (nums: number[]) => (nums.length ? nums.reduce((a, b) => a + b, 0) / nums.length : 0)
 const subjAvg = (list: ExamFact[], subject: string) =>
   round1(avg(list.filter((f) => f.subject === subject).map((f) => f.percent)))
@@ -184,17 +185,22 @@ export function ExamsPage() {
   const scopeStudents = useMemo(() => {
     const classList = className === 'all' ? classesInScope : [className]
     const students = classList.flatMap((c) => getStudents(c)).map((s) => ({ id: s.id, fullName: s.fullName, classId: s.classId }))
-    return user?.role === 'STUDENT' ? students.filter((s) => s.id === localStudentId(user.studentId)) : students
+    if (user?.role !== 'STUDENT') return students
+    const ownId = localStudentId(user.studentId ?? user.id)
+    const own = students.find((s) => s.id === ownId)
+    return own ? [own] : ownId ? [{ id: ownId, fullName: user.fullName, classId: localClassId(user.classIds?.[0]) }] : []
   }, [className, classesInScope, user])
   const [studentId, setStudentId] = useState<'all' | string>('all')
   useEffect(() => {
-    if (user?.role === 'STUDENT' && scopeStudents[0] && studentId !== scopeStudents[0].id) {
-      setStudentId(scopeStudents[0].id)
+    const ownId = localStudentId(user?.studentId ?? user?.id)
+    if (user?.role === 'STUDENT' && ownId && studentId !== ownId) {
+      setStudentId(ownId)
     }
-  }, [user, scopeStudents, studentId])
+  }, [user, studentId])
   useEffect(() => {
+    if (user?.role === 'STUDENT') return
     if (studentId !== 'all' && !scopeStudents.some((s) => s.id === studentId)) setStudentId('all')
-  }, [studentId, scopeStudents])
+  }, [user, studentId, scopeStudents])
 
   // Учитель видит только свои классы даже на уровне «вся параллель».
   const restrictTo = useMemo(

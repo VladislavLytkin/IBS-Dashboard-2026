@@ -130,7 +130,15 @@ function buildStudents(): Student[] {
   return out
 }
 
-export const STUDENTS: Student[] = buildStudents()
+function alignDemoStudents(students: Student[]): Student[] {
+  return students.map((student) =>
+    student.id === '11Б-5'
+      ? { ...student, fullName: 'Соколова Анна' }
+      : student,
+  )
+}
+
+export const STUDENTS: Student[] = alignDemoStudents(buildStudents())
 
 export function getStudents(classId: string): Student[] {
   return STUDENTS.filter((s) => s.classId === classId)
